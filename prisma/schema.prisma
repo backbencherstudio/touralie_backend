@@ -37,32 +37,34 @@ model Account {
 }
 
 model User {
-  id         String    @id @default(cuid())
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  deleted_at DateTime?
-  status     Int?      @default(1) @db.SmallInt
+  // {
+  id          String    @id @default(cuid())
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @default(now())
+  deleted_at  DateTime?
+  approved_at DateTime?
 
-  approved_at  DateTime?
-  availability String?
-
-  email      String? @unique
-  username   String? @unique
-  name       String? @db.VarChar(255)
-  first_name String? @db.VarChar(255)
-  last_name  String? @db.VarChar(255)
-  password   String? @db.VarChar(255)
-  domain     String? @unique
-  avatar     String?
-
-  phone_number  String?
-  country       String?
-  state         String?
-  city          String?
-  address       String?
-  zip_code      String?
-  gender        String?
+  name          String?   @db.VarChar(255)
+  email         String?   @unique
+  password      String?   @db.VarChar(255)
+  avatar        String?
+  status        Int?      @default(1) @db.SmallInt
   date_of_birth DateTime? @db.Date
+  gender        String?
+  what_want     String?
+  // }
+
+  domain       String? @unique
+  last_name    String? @db.VarChar(255)
+  first_name   String? @db.VarChar(255)
+  availability String?
+  phone_number String?
+  country      String?
+  username     String? @unique
+  state        String?
+  city         String?
+  address      String?
+  zip_code     String?
 
   // billing id. e.g. stripe customer id
   billing_id String?
@@ -87,6 +89,7 @@ model User {
   roles                Role[]
   role_users           RoleUser[]
   payment_transactions PaymentTransaction[]
+  memberLeads          MemberLeads[]
 
   @@map("users")
 }
@@ -439,3 +442,108 @@ model UserSetting {
 //   tenant    Organization? @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 //   @@map("posts")
 // }
+
+// -------------------------------------- new models for this project --------------------------------------
+
+model Category {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  title  String
+  videos Video[]
+
+  @@map("categories")
+}
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCE
+}
+
+enum VideoStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Video {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  title         String?
+  url           String?
+  description   String?
+  level         Level?
+  category_id   String?
+  status        VideoStatus @default(DRAFT)
+  is_processing Boolean     @default(true)
+
+  category      Category?       @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  videoChapters VideoChapters[]
+
+  @@map("videos")
+}
+
+model VideoChapters {
+  id         String @id @default(cuid())
+  title      String
+  start_time String
+  end_time   String
+
+  video_id String?
+  video    Video?  @relation(fields: [video_id], references: [id], onDelete: Cascade)
+}
+
+enum PlanPeriod {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
+model Plan {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  title       String
+  price       Decimal    @default(0)
+  period      PlanPeriod @default(WEEK)
+  description String?
+  badge       String
+  features    String[]
+
+  @@map("plans")
+}
+
+model MemberLeads {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  member_id String?
+  member    User?   @relation(fields: [member_id], references: [id], onDelete: SetNull)
+  name      String?
+  email     String?
+  phone     String?
+  message   String?
+
+  @@map("member_leads")
+}
+
+model Activity {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  title       String?
+  description String?
+
+  @@map("activities")
+}
