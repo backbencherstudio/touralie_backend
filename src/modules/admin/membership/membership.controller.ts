@@ -31,7 +31,7 @@ export class MembershipController {
   constructor(private readonly membershipService: MembershipService) {}
 
   @ApiOperation({
-    summary: 'Define a New Membership Plan',
+    summary: 'Define a New Membership Plan (Admin Only)',
     description: `This endpoint allows administrators to create a new membership plan, 
 Required fields:
 - title
@@ -66,7 +66,7 @@ Optional fields:
   }
 
   @ApiOperation({
-    summary: 'Get all membership plans',
+    summary: 'Get all membership plans (Admin Only)',
     description: `This endpoint allows administrators to retrieve a list of all membership plans, 
 Returns a list of all membership plans.
 `,
@@ -78,14 +78,17 @@ Returns a list of all membership plans.
       example: {
         success: true,
         message: 'MemberShip Plans Fetched Successfully',
-        data: {
-          id: 'cmm632yhc0003kg9wfbdqce74',
-          title: 'title',
-          price: '100.00',
-          period: 'WEEK',
-          features: ['feature1', 'feature2'],
-          description: 'description',
-        },
+        data: [
+          {
+            id: 'cmm632yhc0003kg9wfbdqce74',
+            title: 'title',
+            price: '100.00',
+            badge: 'Gold',
+            period: 'WEEK',
+            features: ['feature1', 'feature2'],
+            description: 'description',
+          },
+        ],
       },
     },
   })
@@ -95,7 +98,7 @@ Returns a list of all membership plans.
   }
 
   @ApiOperation({
-    summary: 'Get all member leads',
+    summary: 'Get all member leads (Admin Only)',
     description: `This endpoint allows administrators to retrieve a list of all member leads, 
 Returns a list of all member leads. You can filter the leads by search query and get more leads by pagination.
 `,
@@ -132,7 +135,7 @@ Returns a list of all member leads. You can filter the leads by search query and
   }
 
   @ApiOperation({
-    summary: 'Get a member lead',
+    summary: 'Get a member lead (Admin Only)',
     description: `This endpoint allows administrators to retrieve a specific member lead, 
 Required fields:
 - member lead id
@@ -156,6 +159,7 @@ Required fields:
           plan: {
             id: 'cmml32yhc0003kg9wfbdqce74',
             title: 'Premium Plan',
+            badge: 'Gold',
             price: 199.99,
             period: 'MONTH',
             features: [
@@ -176,7 +180,7 @@ Required fields:
   }
 
   @ApiOperation({
-    summary: 'Delete a membership plan',
+    summary: 'Delete a membership plan (Admin Only)',
     description: `This endpoint allows administrators to delete a specific membership plan, 
 Required fields:
 - membership plan id

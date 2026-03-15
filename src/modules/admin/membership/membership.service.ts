@@ -23,6 +23,7 @@ export class MembershipService {
       select: {
         id: true,
         title: true,
+        badge: true,
         price: true,
         period: true,
         features: true,
@@ -112,6 +113,7 @@ export class MembershipService {
           select: {
             id: true,
             title: true,
+            badge: true,
             price: true,
             period: true,
             features: true,
