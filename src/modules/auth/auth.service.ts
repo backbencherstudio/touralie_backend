@@ -1,5 +1,10 @@
 // external imports
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
@@ -28,54 +33,41 @@ export class AuthService {
   ) {}
 
   async me(userId: string) {
-    try {
-      const user = await this.prisma.user.findFirst({
-        where: {
-          id: userId,
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          avatar: true,
-          address: true,
-          phone_number: true,
-          type: true,
-          gender: true,
-          date_of_birth: true,
-          created_at: true,
-        },
-      });
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        address: true,
+        phone_number: true,
+        type: true,
+        gender: true,
+        date_of_birth: true,
+        created_at: true,
+      },
+    });
 
-      if (!user) {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
-      if (user.avatar) {
-        user['avatar_url'] = SojebStorage.url(
-          appConfig().storageUrl.avatar + user.avatar,
-        );
-      }
+    if (user.avatar) {
+      user['avatar_url'] = SojebStorage.url(
+        appConfig().storageUrl.avatar + user.avatar,
+      );
+    }
 
-      if (user) {
-        return {
-          success: true,
-          data: user,
-        };
-      } else {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
-    } catch (error) {
+    if (user) {
       return {
-        success: false,
-        message: error.message,
+        success: true,
+        data: user,
       };
+    } else {
+      throw new NotFoundException('User not found');
     }
   }
 
@@ -84,89 +76,79 @@ export class AuthService {
     updateUserDto: UpdateUserDto,
     image?: Express.Multer.File,
   ) {
-    try {
-      const data: any = {};
-      if (updateUserDto.name) {
-        data.name = updateUserDto.name;
-      }
-      if (updateUserDto.first_name) {
-        data.first_name = updateUserDto.first_name;
-      }
-      if (updateUserDto.last_name) {
-        data.last_name = updateUserDto.last_name;
-      }
-      if (updateUserDto.phone_number) {
-        data.phone_number = updateUserDto.phone_number;
-      }
-      if (updateUserDto.country) {
-        data.country = updateUserDto.country;
-      }
-      if (updateUserDto.state) {
-        data.state = updateUserDto.state;
-      }
-      if (updateUserDto.local_government) {
-        data.local_government = updateUserDto.local_government;
-      }
-      if (updateUserDto.city) {
-        data.city = updateUserDto.city;
-      }
-      if (updateUserDto.zip_code) {
-        data.zip_code = updateUserDto.zip_code;
-      }
-      if (updateUserDto.address) {
-        data.address = updateUserDto.address;
-      }
-      if (updateUserDto.gender) {
-        data.gender = updateUserDto.gender;
-      }
-      if (updateUserDto.date_of_birth) {
-        data.date_of_birth = DateHelper.format(updateUserDto.date_of_birth);
-      }
-      if (image) {
-        // delete old image from storage
-        const oldImage = await this.prisma.user.findFirst({
-          where: { id: userId },
-          select: { avatar: true },
-        });
-        if (oldImage.avatar) {
-          await SojebStorage.delete(
-            appConfig().storageUrl.avatar + oldImage.avatar,
-          );
-        }
-
-        // upload file
-        const fileName = `${StringHelper.randomString()}${image.originalname}`;
-        await SojebStorage.put(
-          appConfig().storageUrl.avatar + fileName,
-          image.buffer,
+    const data: any = {};
+    if (updateUserDto.name) {
+      data.name = updateUserDto.name;
+    }
+    if (updateUserDto.first_name) {
+      data.first_name = updateUserDto.first_name;
+    }
+    if (updateUserDto.last_name) {
+      data.last_name = updateUserDto.last_name;
+    }
+    if (updateUserDto.phone_number) {
+      data.phone_number = updateUserDto.phone_number;
+    }
+    if (updateUserDto.country) {
+      data.country = updateUserDto.country;
+    }
+    if (updateUserDto.state) {
+      data.state = updateUserDto.state;
+    }
+    if (updateUserDto.local_government) {
+      data.local_government = updateUserDto.local_government;
+    }
+    if (updateUserDto.city) {
+      data.city = updateUserDto.city;
+    }
+    if (updateUserDto.zip_code) {
+      data.zip_code = updateUserDto.zip_code;
+    }
+    if (updateUserDto.address) {
+      data.address = updateUserDto.address;
+    }
+    if (updateUserDto.gender) {
+      data.gender = updateUserDto.gender;
+    }
+    if (updateUserDto.date_of_birth) {
+      data.date_of_birth = DateHelper.format(updateUserDto.date_of_birth);
+    }
+    if (image) {
+      // delete old image from storage
+      const oldImage = await this.prisma.user.findFirst({
+        where: { id: userId },
+        select: { avatar: true },
+      });
+      if (oldImage.avatar) {
+        await SojebStorage.delete(
+          appConfig().storageUrl.avatar + oldImage.avatar,
         );
-
-        data.avatar = fileName;
       }
-      const user = await this.userRepository.getUserDetails(userId);
-      if (user) {
-        await this.prisma.user.update({
-          where: { id: userId },
-          data: {
-            ...data,
-          },
-        });
 
-        return {
-          success: true,
-          message: 'User updated successfully',
-        };
-      } else {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
-    } catch (error) {
+      // upload file
+      const fileName = `${StringHelper.randomString()}${image.originalname}`;
+      await SojebStorage.put(
+        appConfig().storageUrl.avatar + fileName,
+        image.buffer,
+      );
+
+      data.avatar = fileName;
+    }
+    const user = await this.userRepository.getUserDetails(userId);
+    if (user) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...data,
+        },
+      });
+
       return {
-        success: false,
-        message: error.message,
+        success: true,
+        message: 'User updated successfully',
       };
+    } else {
+      throw new NotFoundException('User not found');
     }
   }
 
@@ -225,38 +207,35 @@ export class AuthService {
   }
 
   async login({ email, userId }) {
-    try {
-      const payload = { email: email, sub: userId };
+    const payload = { email: email, sub: userId };
 
-      const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
-      const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-      const user = await this.userRepository.getUserDetails(userId);
+    const user = await this.userRepository.getUserDetails(userId);
 
-      // store refreshToken
-      await this.redis.set(
-        `refresh_token:${user.id}`,
-        refreshToken,
-        'EX',
-        60 * 60 * 24 * 7, // 7 days in seconds
-      );
-
-      return {
-        success: true,
-        message: 'Logged in successfully',
-        authorization: {
-          type: 'bearer',
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        },
-        type: user.type,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
+
+    // store refreshToken
+    await this.redis.set(
+      `refresh_token:${user.id}`,
+      refreshToken,
+      'EX',
+      60 * 60 * 24 * 7, // 7 days in seconds
+    );
+
+    return {
+      success: true,
+      message: 'Logged in successfully',
+      authorization: {
+        type: 'bearer',
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      },
+      type: user.type,
+    };
   }
 
   async refreshToken(user_id: string, refreshToken: string) {
@@ -334,320 +313,264 @@ export class AuthService {
     email,
     password,
     type,
+    weight,
+    height,
+    gender,
+    date_of_birth,
+    personalization,
   }: {
     name: string;
-    first_name: string;
-    last_name: string;
+    first_name?: string;
+    last_name?: string;
     email: string;
     password: string;
     type?: string;
+    weight?: number;
+    height?: number;
+    gender?: string;
+    date_of_birth?: Date;
+    personalization?: string[];
   }) {
-    try {
-      // Check if email already exist
-      const userEmailExist = await this.userRepository.exist({
-        field: 'email',
-        value: String(email),
+    // Check if email already exist
+    const userEmailExist = await this.userRepository.exist({
+      field: 'email',
+      value: String(email),
+    });
+
+    if (userEmailExist) {
+      throw new UnauthorizedException('Email already exist');
+    }
+
+    const user = await this.userRepository.createUser({
+      name: name,
+      first_name: first_name,
+      last_name: last_name,
+      email: email,
+      password: password,
+      type: type,
+      weight: weight,
+      height: height,
+      gender: gender,
+      date_of_birth: date_of_birth,
+      personalization: personalization,
+    });
+
+    if (user == null && user.success == false) {
+      throw new InternalServerErrorException('Failed to create account');
+    }
+
+    // create stripe customer account
+    // const stripeCustomer = await StripePayment.createCustomer({
+    //   user_id: user.data.id,
+    //   email: email,
+    //   name: name,
+    // });
+
+    // if (stripeCustomer) {
+    //   await this.prisma.user.update({
+    //     where: {
+    //       id: user.data.id,
+    //     },
+    //     data: {
+    //       billing_id: stripeCustomer.id,
+    //     },
+    //   });
+    // }
+
+    // ----------------------------------------------------
+    // // create otp code
+    const token = await this.ucodeRepository.createToken({
+      userId: user.data.id,
+      isOtp: true,
+    });
+
+    // // send otp code to email
+    await this.mailService.sendOtpCodeToEmail({
+      email: email,
+      name: name,
+      otp: token,
+    });
+
+    return {
+      success: true,
+      message: 'We have sent an OTP code to your email',
+    };
+
+    // ----------------------------------------------------
+
+    // Generate verification token
+    // const token = await this.ucodeRepository.createVerificationToken({
+    //   userId: user.data.id,
+    //   email: email,
+    // });
+
+    // Send verification email with token
+    // await this.mailService.sendVerificationLink({
+    //   email,
+    //   name: email,
+    //   token: token.token,
+    //   type: type,
+    // });
+
+    // return {
+    //   success: true,
+    //   message: 'We have sent a verification link to your email',
+    // };
+  }
+
+  async forgotPassword(email) {
+    const user = await this.userRepository.exist({
+      field: 'email',
+      value: email,
+    });
+
+    if (user) {
+      const token = await this.ucodeRepository.createToken({
+        userId: user.id,
+        isOtp: true,
       });
 
-      if (userEmailExist) {
-        return {
-          statusCode: 401,
-          message: 'Email already exist',
-        };
-      }
-
-      const user = await this.userRepository.createUser({
-        name: name,
-        first_name: first_name,
-        last_name: last_name,
+      await this.mailService.sendOtpCodeToEmail({
         email: email,
-        password: password,
-        type: type,
-      });
-
-      if (user == null && user.success == false) {
-        return {
-          success: false,
-          message: 'Failed to create account',
-        };
-      }
-
-      // create stripe customer account
-      const stripeCustomer = await StripePayment.createCustomer({
-        user_id: user.data.id,
-        email: email,
-        name: name,
-      });
-
-      if (stripeCustomer) {
-        await this.prisma.user.update({
-          where: {
-            id: user.data.id,
-          },
-          data: {
-            billing_id: stripeCustomer.id,
-          },
-        });
-      }
-
-      // ----------------------------------------------------
-      // // create otp code
-      // const token = await this.ucodeRepository.createToken({
-      //   userId: user.data.id,
-      //   isOtp: true,
-      // });
-
-      // // send otp code to email
-      // await this.mailService.sendOtpCodeToEmail({
-      //   email: email,
-      //   name: name,
-      //   otp: token,
-      // });
-
-      // return {
-      //   success: true,
-      //   message: 'We have sent an OTP code to your email',
-      // };
-
-      // ----------------------------------------------------
-
-      // Generate verification token
-      const token = await this.ucodeRepository.createVerificationToken({
-        userId: user.data.id,
-        email: email,
-      });
-
-      // Send verification email with token
-      await this.mailService.sendVerificationLink({
-        email,
-        name: email,
-        token: token.token,
-        type: type,
+        name: user.name,
+        otp: token,
       });
 
       return {
         success: true,
-        message: 'We have sent a verification link to your email',
+        message: 'We have sent an OTP code to your email',
       };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
-
-  async forgotPassword(email) {
-    try {
-      const user = await this.userRepository.exist({
-        field: 'email',
-        value: email,
-      });
-
-      if (user) {
-        const token = await this.ucodeRepository.createToken({
-          userId: user.id,
-          isOtp: true,
-        });
-
-        await this.mailService.sendOtpCodeToEmail({
-          email: email,
-          name: user.name,
-          otp: token,
-        });
-
-        return {
-          success: true,
-          message: 'We have sent an OTP code to your email',
-        };
-      } else {
-        return {
-          success: false,
-          message: 'Email not found',
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+    } else {
+      throw new NotFoundException('Email not found');
     }
   }
 
   async resetPassword({ email, token, password }) {
-    try {
-      const user = await this.userRepository.exist({
-        field: 'email',
-        value: email,
+    const user = await this.userRepository.exist({
+      field: 'email',
+      value: email,
+    });
+
+    if (user) {
+      const existToken = await this.ucodeRepository.validateToken({
+        email: email,
+        token: token,
       });
 
-      if (user) {
-        const existToken = await this.ucodeRepository.validateToken({
+      if (existToken) {
+        await this.userRepository.changePassword({
+          email: email,
+          password: password,
+        });
+
+        // delete otp code
+        await this.ucodeRepository.deleteToken({
           email: email,
           token: token,
-        });
-
-        if (existToken) {
-          await this.userRepository.changePassword({
-            email: email,
-            password: password,
-          });
-
-          // delete otp code
-          await this.ucodeRepository.deleteToken({
-            email: email,
-            token: token,
-          });
-
-          return {
-            success: true,
-            message: 'Password updated successfully',
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Invalid token',
-          };
-        }
-      } else {
-        return {
-          success: false,
-          message: 'Email not found',
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
-
-  async verifyEmail({ email, token }) {
-    try {
-      const user = await this.userRepository.exist({
-        field: 'email',
-        value: email,
-      });
-
-      if (user) {
-        const existToken = await this.ucodeRepository.validateToken({
-          email: email,
-          token: token,
-        });
-
-        if (existToken) {
-          await this.prisma.user.update({
-            where: {
-              id: user.id,
-            },
-            data: {
-              email_verified_at: new Date(Date.now()),
-            },
-          });
-
-          // delete otp code
-          // await this.ucodeRepository.deleteToken({
-          //   email: email,
-          //   token: token,
-          // });
-
-          return {
-            success: true,
-            message: 'Email verified successfully',
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Invalid token',
-          };
-        }
-      } else {
-        return {
-          success: false,
-          message: 'Email not found',
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
-
-  async resendVerificationEmail(email: string) {
-    try {
-      const user = await this.userRepository.getUserByEmail(email);
-
-      if (user) {
-        // create otp code
-        const token = await this.ucodeRepository.createToken({
-          userId: user.id,
-          isOtp: true,
-        });
-
-        // send otp code to email
-        await this.mailService.sendOtpCodeToEmail({
-          email: email,
-          name: user.name,
-          otp: token,
         });
 
         return {
           success: true,
-          message: 'We have sent a verification code to your email',
+          message: 'Password updated successfully',
         };
       } else {
-        return {
-          success: false,
-          message: 'Email not found',
-        };
+        throw new UnauthorizedException('Invalid token');
       }
-    } catch (error) {
+    } else {
+      throw new NotFoundException('Email not found');
+    }
+  }
+
+  async verifyEmail({ email, token }) {
+    const user = await this.userRepository.exist({
+      field: 'email',
+      value: email,
+    });
+
+    if (user) {
+      const existToken = await this.ucodeRepository.validateToken({
+        email: email,
+        token: token,
+      });
+
+      if (existToken) {
+        await this.prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            email_verified_at: new Date(Date.now()),
+          },
+        });
+
+        // delete otp code
+        // await this.ucodeRepository.deleteToken({
+        //   email: email,
+        //   token: token,
+        // });
+        await this.ucodeRepository.deleteAllToken({ email: email });
+
+        return {
+          success: true,
+          message: 'Email verified successfully',
+        };
+      } else {
+        throw new UnauthorizedException('Invalid token');
+      }
+    } else {
+      throw new NotFoundException('Email not found');
+    }
+  }
+
+  async resendVerificationEmail(email: string) {
+    const user = await this.userRepository.getUserByEmail(email);
+
+    if (user) {
+      // create otp code
+      const token = await this.ucodeRepository.createToken({
+        userId: user.id,
+        isOtp: true,
+      });
+
+      // send otp code to email
+      await this.mailService.sendOtpCodeToEmail({
+        email: email,
+        name: user.name,
+        otp: token,
+      });
+
       return {
-        success: false,
-        message: error.message,
+        success: true,
+        message: 'We have sent a verification code to your email',
       };
+    } else {
+      throw new NotFoundException('Email not found');
     }
   }
 
   async changePassword({ user_id, oldPassword, newPassword }) {
-    try {
-      const user = await this.userRepository.getUserDetails(user_id);
+    const user = await this.userRepository.getUserDetails(user_id);
 
-      if (user) {
-        const _isValidPassword = await this.userRepository.validatePassword({
+    if (user) {
+      const _isValidPassword = await this.userRepository.validatePassword({
+        email: user.email,
+        password: oldPassword,
+      });
+      if (_isValidPassword) {
+        await this.userRepository.changePassword({
           email: user.email,
-          password: oldPassword,
+          password: newPassword,
         });
-        if (_isValidPassword) {
-          await this.userRepository.changePassword({
-            email: user.email,
-            password: newPassword,
-          });
 
-          return {
-            success: true,
-            message: 'Password updated successfully',
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Invalid password',
-          };
-        }
-      } else {
         return {
-          success: false,
-          message: 'Email not found',
+          success: true,
+          message: 'Password updated successfully',
         };
+      } else {
+        throw new UnauthorizedException('Invalid password');
       }
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+    } else {
+      throw new NotFoundException('User not found');
     }
   }
 

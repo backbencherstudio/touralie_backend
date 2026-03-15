@@ -44,14 +44,16 @@ model User {
   deleted_at  DateTime?
   approved_at DateTime?
 
-  name          String?   @db.VarChar(255)
-  email         String?   @unique
-  password      String?   @db.VarChar(255)
-  avatar        String?
-  status        Int?      @default(1) @db.SmallInt
-  date_of_birth DateTime? @db.Date
-  gender        String?
-  what_want     String?
+  name            String?   @db.VarChar(255)
+  email           String?   @unique
+  password        String?   @db.VarChar(255)
+  avatar          String?
+  status          Int?      @default(1) @db.SmallInt
+  weight          Int?
+  height          Int?
+  date_of_birth   DateTime? @db.Date
+  gender          String?
+  personalization String[]
   // }
 
   domain       String? @unique
@@ -89,7 +91,11 @@ model User {
   roles                Role[]
   role_users           RoleUser[]
   payment_transactions PaymentTransaction[]
-  memberLeads          MemberLeads[]
+  member_leads         MemberLeads[]
+
+  prescriptions   Prescription[]
+  favorite_videos FavoriteVideo[]
+  watch_histories WatchHistory[]
 
   @@map("users")
 }
@@ -464,6 +470,7 @@ enum Level {
 }
 
 enum VideoStatus {
+  UPLOADING
   DRAFT
   PUBLISHED
 }
@@ -476,26 +483,84 @@ model Video {
 
   title         String?
   url           String?
+  thumbnail_url String?
   description   String?
   level         Level?
   category_id   String?
-  status        VideoStatus @default(DRAFT)
-  is_processing Boolean     @default(true)
+  status        VideoStatus @default(UPLOADING)
+  duration      Int? // in seconds
 
-  category      Category?       @relation(fields: [category_id], references: [id], onDelete: SetNull)
-  videoChapters VideoChapters[]
+  category        Category?       @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  video_chapters  VideoChapters[]
+  prescriptions   Prescription[]
+  favorite_videos FavoriteVideo[]
+  watch_histories WatchHistory[]
 
   @@map("videos")
 }
 
 model VideoChapters {
-  id         String @id @default(cuid())
-  title      String
-  start_time String
-  end_time   String
+  id            String  @id @default(cuid())
+  title         String
+  start_time    String
+  end_time      String
+  thumbnail_url String?
+  video_id      String?
+  video         Video?  @relation(fields: [video_id], references: [id], onDelete: Cascade)
+}
 
+model WatchHistory {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  user_id              String?
+  video_id             String?
+  is_completed         Boolean @default(false)
+  last_played_position Int? // in seconds
+
+  user  User?  @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  video Video? @relation(fields: [video_id], references: [id], onDelete: SetNull)
+
+  @@map("watch_histories")
+}
+
+model Prescription {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  videos   Video[]
+  patients User[]
+
+  @@map("prescriptions")
+}
+
+model Instruction {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  title       String
+  description String?
+
+  features String[]
+
+  @@map("instructions")
+}
+
+model FavoriteVideo {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  user_id  String
   video_id String?
-  video    Video?  @relation(fields: [video_id], references: [id], onDelete: Cascade)
+
+  user  User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  video Video? @relation(fields: [video_id], references: [id], onDelete: Cascade)
 }
 
 enum PlanPeriod {
@@ -513,7 +578,7 @@ model Plan {
   deleted_at DateTime?
 
   title       String
-  price       Decimal    @default(0)
+  price       Float      @default(0)
   period      PlanPeriod @default(WEEK)
   description String?
   badge       String

@@ -7,7 +7,6 @@ import { Role } from '../../guard/role/role.enum';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
-
 @Injectable()
 export class UserRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -143,13 +142,7 @@ export class UserRepository {
    * @param param0
    * @returns
    */
-  async attachRole({
-    user_id,
-    role_id,
-  }: {
-    user_id: string;
-    role_id: string;
-  }) {
+  async attachRole({ user_id, role_id }: { user_id: string; role_id: string }) {
     const role = await this.prisma.roleUser.create({
       data: {
         user_id: user_id,
@@ -164,13 +157,7 @@ export class UserRepository {
    * @param param0
    * @returns
    */
-  async syncRole({
-    user_id,
-    role_id,
-  }: {
-    user_id: string;
-    role_id: string;
-  }) {
+  async syncRole({ user_id, role_id }: { user_id: string; role_id: string }) {
     const role = await this.prisma.roleUser.updateMany({
       where: {
         AND: [
@@ -198,6 +185,11 @@ export class UserRepository {
     email,
     password,
     phone_number,
+    weight,
+    height,
+    gender,
+    date_of_birth,
+    personalization,
     role_id = null,
     type = 'user',
   }: {
@@ -206,6 +198,11 @@ export class UserRepository {
     last_name?: string;
     email: string;
     password: string;
+    weight?: number;
+    height?: number;
+    date_of_birth?: Date;
+    gender?: string;
+    personalization?: string[];
     phone_number?: string;
     role_id?: string;
     type?: string;
@@ -223,6 +220,21 @@ export class UserRepository {
       }
       if (phone_number) {
         data['phone_number'] = phone_number;
+      }
+      if (weight) {
+        data['weight'] = weight;
+      }
+      if (height) {
+        data['height'] = height;
+      }
+      if (gender) {
+        data['gender'] = gender;
+      }
+      if (date_of_birth) {
+        data['date_of_birth'] = date_of_birth;
+      }
+      if (personalization) {
+        data['personalization'] = personalization;
       }
       if (email) {
         // Check if email already exist

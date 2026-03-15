@@ -11,9 +11,14 @@ import { MessageService } from './message.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MessageGateway } from './message.gateway';
 import { Request } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiExcludeController,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-
+@ApiExcludeController()
 @ApiBearerAuth()
 @ApiTags('Message')
 @UseGuards(JwtAuthGuard)

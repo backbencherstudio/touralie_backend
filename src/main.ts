@@ -67,18 +67,50 @@ async function bootstrap() {
     },
   });
 
-  // swagger
+  // Swagger setup
   const options = new DocumentBuilder()
-    .setTitle(`${process.env.APP_NAME} api`)
-    .setDescription(`${process.env.APP_NAME} api docs`)
+    .setTitle(`${process.env.APP_NAME} API`)
+    .setDescription(`${process.env.APP_NAME} API Docs`)
     .setVersion('1.0')
     .addTag(`${process.env.APP_NAME}`)
-    .addBearerAuth()
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'user_token',
+    ) // Adds user_token as Bearer Auth
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'admin_token',
+    ) // Adds admin_token as Bearer Auth
     .build();
+
   const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup('api/docs', app, document);
+
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      responseInterceptor: (response) => {
+        // Check if the response is from the login endpoint
+        if (response.url.includes('/auth/login') && response.status === 200) {
+          const data = JSON.parse(response.data);
+          const userToken = data.authorization.access_token;
+          const adminToken = data.authorization.access_token;
+
+          // Automatically set the token based on user type (either 'user' or 'admin')
+          if (userToken && data.type === 'user') {
+            (window as any).ui.preauthorizeApiKey('user_token', userToken); // Set user_token
+          } else if (adminToken && data.type === 'admin') {
+            (window as any).ui.preauthorizeApiKey('admin_token', adminToken); // Set admin_token
+          }
+        }
+        return response;
+      },
+    },
+  });
+
   // end swagger
 
-  await app.listen(process.env.PORT ?? 4000, '0.0.0.0');
+  await app.listen(process.env.PORT ?? 4000, '0.0.0.0', () => {
+    console.log(`Application is running on port: ${process.env.PORT}`);
+  });
 }
 bootstrap();

@@ -1,7 +1,8 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { FaqService } from './faq.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-
+import { ApiExcludeController } from '@nestjs/swagger';
+@ApiExcludeController()
 @ApiTags('Faq')
 @Controller('faq')
 export class FaqController {

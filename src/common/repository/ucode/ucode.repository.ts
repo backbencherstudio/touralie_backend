@@ -144,6 +144,13 @@ export class UcodeRepository {
       },
     });
   }
+  async deleteAllToken({ email }) {
+    await this.prisma.ucode.deleteMany({
+      where: {
+        AND: [{ email: email }],
+      },
+    });
+  }
 
   async createVerificationToken(params: { userId: string; email: string }) {
     try {

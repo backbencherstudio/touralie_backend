@@ -2,7 +2,8 @@ import { Controller, Post, Req, Headers } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import { Request } from 'express';
 import { TransactionRepository } from '../../../common/repository/transaction/transaction.repository';
-
+import { ApiExcludeController } from '@nestjs/swagger';
+@ApiExcludeController()
 @Controller('payment/stripe')
 export class StripeController {
   constructor(
