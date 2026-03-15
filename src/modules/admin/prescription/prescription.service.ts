@@ -127,15 +127,121 @@ export class PrescriptionService {
     };
   }
 
-  findOnePrescription(id: number) {
-    return `This action returns a #${id} prescription`;
+  async findOnePrescription(id: string) {
+    const patient = await this.prisma.patient.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        prescription: {
+          select: {
+            id: true,
+            instruction: {
+              select: {
+                id: true,
+                description: true,
+                points: true,
+              },
+            },
+            videos: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                duration: true,
+                thumbnail_url: true,
+                url: true,
+                video_chapters: {
+                  select: {
+                    id: true,
+                    title: true,
+                    start_time: true,
+                    end_time: true,
+                  },
+                },
+                category: {
+                  select: {
+                    title: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!patient) {
+      throw new InternalServerErrorException('Failed to find prescription');
+    }
+
+    const formattedPatient = {
+      patient_id: patient.id,
+      member_id: patient.user.id,
+      member_name: patient.user.name,
+      member_email: patient.user.email,
+      prescription_id: patient.prescription.id,
+      instruction: {
+        instruction_id: patient.prescription.instruction.id,
+        description: patient.prescription.instruction.description,
+        points: patient.prescription.instruction.points,
+      },
+      videos: patient.prescription.videos.map((video) => ({
+        video_id: video.id,
+        title: video.title,
+        description: video.description,
+        duration: video.duration,
+        thumbnail_url: video.thumbnail_url,
+        url: video.url,
+        video_chapters: video.video_chapters.map((chapter) => ({
+          id: chapter.id,
+          title: chapter.title,
+          start_time: chapter.start_time,
+          end_time: chapter.end_time,
+        })),
+        category: video.category.title,
+      })),
+    };
+
+    return {
+      success: true,
+      message: 'Prescription fetched successfully',
+      data: formattedPatient,
+    };
   }
 
-  updatePrescription(id: number, updatePrescriptionDto: UpdatePrescriptionDto) {
-    return `This action updates a #${id} prescription`;
-  }
+  async removePrescription(id: string) {
+    const patient = await this.prisma.patient.findUnique({
+      where: {
+        id,
+      },
+    });
 
-  removePrescription(id: number) {
-    return `This action removes a #${id} prescription`;
+    if (!patient) {
+      throw new InternalServerErrorException('Failed to find prescription');
+    }
+
+    const deletedPatient = await this.prisma.patient.delete({
+      where: {
+        id: patient.id,
+      },
+    });
+
+    if (!deletedPatient) {
+      throw new InternalServerErrorException('Failed to delete prescription');
+    }
+
+    return {
+      success: true,
+      message: 'Prescription deleted successfully',
+    };
   }
 }

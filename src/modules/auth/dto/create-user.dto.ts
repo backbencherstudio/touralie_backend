@@ -35,7 +35,7 @@ export class RegisterUserDto {
   last_name?: string;
 
   @IsNotEmpty()
-  @IsString()
+  @IsEmail()
   @ApiProperty({
     example: 'john@example.com',
     description: 'Email address of the user',

@@ -98,24 +98,76 @@ Optional fields:
     return this.prescriptionService.findAllPrescription(query);
   }
 
-  @Get(':id')
-  findOnePrescription(@Param('id') id: string) {
-    return this.prescriptionService.findOnePrescription(+id);
+  @ApiOperation({
+    summary: 'Find one prescription (Admin Only)',
+    description: `This endpoint allows administrators to find one prescription.
+    - patient-id param is required
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Prescription found successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Prescription found successfully',
+        data: {
+          patient_id: 'uuid',
+          member_id: 'uuid',
+          member_name: 'John Doe',
+          member_email: 'email',
+          prescription_id: 'uuid',
+          instruction: {
+            instruction_id: 'uuid',
+            description: 'description',
+            points: ['point 1', 'point 2'],
+          },
+          videos: [
+            {
+              video_id: 'uuid',
+              title: 'Video 1',
+              description: 'description',
+              duration: 10,
+              thumbnail_url: 'thumbnail_url',
+              url: 'url',
+              video_chapters: [
+                {
+                  id: 1,
+                  title: 'chapter 1',
+                  start_time: 0,
+                  end_time: 10,
+                },
+              ],
+              category: 'category',
+            },
+          ],
+        },
+      },
+    },
+  })
+  @Get(':patient-id')
+  findOnePrescription(@Param('patient-id') id: string) {
+    return this.prescriptionService.findOnePrescription(id);
   }
 
-  @Patch(':id')
-  updatePrescription(
-    @Param('id') id: string,
-    @Body() updatePrescriptionDto: UpdatePrescriptionDto,
-  ) {
-    return this.prescriptionService.updatePrescription(
-      +id,
-      updatePrescriptionDto,
-    );
-  }
-
-  @Delete(':id')
-  removePrescription(@Param('id') id: string) {
-    return this.prescriptionService.removePrescription(+id);
+  @ApiOperation({
+    summary: 'Delete one prescription (Admin Only)',
+    description: `This endpoint allows administrators to delete one prescription.
+    - patient-id param is required
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Prescription deleted successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Prescription deleted successfully',
+      },
+    },
+  })
+  @Delete(':patient-id')
+  removePrescription(@Param('patient-id') id: string) {
+    return this.prescriptionService.removePrescription(id);
   }
 }
