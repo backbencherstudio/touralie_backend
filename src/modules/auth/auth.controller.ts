@@ -67,7 +67,7 @@ Required fields:
         success: true,
         message: 'User details fetched successfully',
         data: {
-          id: 'asdfsdhjcbjdfhadkfhakd',
+          id: 'cmm632yhc0003kg9wfbdqce74',
           name: 'name',
           email: 'email',
           avatar: 'avatar',

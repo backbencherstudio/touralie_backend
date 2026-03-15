@@ -577,12 +577,13 @@ model Plan {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  title       String
-  price       Float      @default(0)
-  period      PlanPeriod @default(WEEK)
-  description String?
-  badge       String
-  features    String[]
+  title        String
+  price        Float         @default(0)
+  period       PlanPeriod    @default(WEEK)
+  description  String?
+  badge        String
+  features     String[]
+  member_leads MemberLeads[]
 
   @@map("plans")
 }
@@ -593,11 +594,14 @@ model MemberLeads {
   updated_at DateTime @default(now())
 
   member_id String?
-  member    User?   @relation(fields: [member_id], references: [id], onDelete: SetNull)
   name      String?
   email     String?
   phone     String?
   message   String?
+  plan_id   String?
+
+  member User? @relation(fields: [member_id], references: [id], onDelete: SetNull)
+  plan   Plan? @relation(fields: [plan_id], references: [id], onDelete: SetNull)
 
   @@map("member_leads")
 }
