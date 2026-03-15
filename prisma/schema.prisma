@@ -37,32 +37,36 @@ model Account {
 }
 
 model User {
-  id         String    @id @default(cuid())
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  deleted_at DateTime?
-  status     Int?      @default(1) @db.SmallInt
+  // {
+  id          String    @id @default(cuid())
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @default(now())
+  deleted_at  DateTime?
+  approved_at DateTime?
 
-  approved_at  DateTime?
+  name            String?   @db.VarChar(255)
+  email           String?   @unique
+  password        String?   @db.VarChar(255)
+  avatar          String?
+  status          Int?      @default(1) @db.SmallInt
+  weight          Int?
+  height          Int?
+  date_of_birth   DateTime? @db.Date
+  gender          String?
+  personalization String[]
+  // }
+
+  domain       String? @unique
+  last_name    String? @db.VarChar(255)
+  first_name   String? @db.VarChar(255)
   availability String?
-
-  email      String? @unique
-  username   String? @unique
-  name       String? @db.VarChar(255)
-  first_name String? @db.VarChar(255)
-  last_name  String? @db.VarChar(255)
-  password   String? @db.VarChar(255)
-  domain     String? @unique
-  avatar     String?
-
-  phone_number  String?
-  country       String?
-  state         String?
-  city          String?
-  address       String?
-  zip_code      String?
-  gender        String?
-  date_of_birth DateTime? @db.Date
+  phone_number String?
+  country      String?
+  username     String? @unique
+  state        String?
+  city         String?
+  address      String?
+  zip_code     String?
 
   // billing id. e.g. stripe customer id
   billing_id String?
@@ -87,6 +91,11 @@ model User {
   roles                Role[]
   role_users           RoleUser[]
   payment_transactions PaymentTransaction[]
+  member_leads         MemberLeads[]
+
+  favorite_videos FavoriteVideo[]
+  watch_histories WatchHistory[]
+  patients        Patient[]
 
   @@map("users")
 }
@@ -439,3 +448,188 @@ model UserSetting {
 //   tenant    Organization? @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 //   @@map("posts")
 // }
+
+// -------------------------------------- new models for this project --------------------------------------
+
+model Category {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  title  String
+  videos Video[]
+
+  @@map("categories")
+}
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCE
+}
+
+enum VideoStatus {
+  UPLOADING
+  DRAFT
+  PUBLISHED
+}
+
+model Video {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  title         String?
+  url           String?
+  thumbnail_url String?
+  description   String?
+  level         Level?
+  category_id   String?
+  status        VideoStatus @default(UPLOADING)
+  duration      Int? // in seconds
+
+  category        Category?       @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  video_chapters  VideoChapters[]
+  prescriptions   Prescription[]
+  favorite_videos FavoriteVideo[]
+  watch_histories WatchHistory[]
+
+  @@map("videos")
+}
+
+model VideoChapters {
+  id            String  @id @default(cuid())
+  title         String
+  start_time    String
+  end_time      String
+  thumbnail_url String?
+  video_id      String?
+  video         Video?  @relation(fields: [video_id], references: [id], onDelete: Cascade)
+}
+
+model WatchHistory {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  user_id              String?
+  video_id             String?
+  is_completed         Boolean @default(false)
+  last_played_position Int? // in seconds
+
+  user  User?  @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  video Video? @relation(fields: [video_id], references: [id], onDelete: SetNull)
+
+  @@map("watch_histories")
+}
+
+model Prescription {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  videos      Video[]
+  instruction Instruction?
+  patients    Patient[]
+
+  @@map("prescriptions")
+}
+
+model Patient {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  prescription_id String
+  user_id         String
+
+  prescription Prescription @relation(fields: [prescription_id], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("patients")
+}
+
+model Instruction {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  description     String?
+  points          String[]
+  prescription_id String   @unique
+
+  prescription Prescription @relation(fields: [prescription_id], references: [id], onDelete: Cascade)
+
+  @@map("instructions")
+}
+
+model FavoriteVideo {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  user_id  String
+  video_id String?
+
+  user  User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  video Video? @relation(fields: [video_id], references: [id], onDelete: Cascade)
+}
+
+enum PlanPeriod {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
+model Plan {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  title        String
+  price        Float         @default(0)
+  period       PlanPeriod    @default(WEEK)
+  description  String?
+  badge        String
+  features     String[]
+  member_leads MemberLeads[]
+
+  @@map("plans")
+}
+
+model MemberLeads {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  member_id String?
+  name      String?
+  email     String?
+  phone     String?
+  message   String?
+  plan_id   String?
+
+  member User? @relation(fields: [member_id], references: [id], onDelete: SetNull)
+  plan   Plan? @relation(fields: [plan_id], references: [id], onDelete: SetNull)
+
+  @@map("member_leads")
+}
+
+model Activity {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  title       String?
+  description String?
+
+  @@map("activities")
+}

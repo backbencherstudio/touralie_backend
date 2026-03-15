@@ -20,7 +20,8 @@ import { Roles } from '../../../common/guard/role/roles.decorator';
 import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { JwtAuthGuard } from '../../../modules/auth/guards/jwt-auth.guard';
 import { Role } from '../../../common/guard/role/role.enum';
-
+import { ApiExcludeController } from '@nestjs/swagger';
+@ApiExcludeController()
 @ApiBearerAuth()
 @ApiTags('Website Info')
 @UseGuards(JwtAuthGuard, RolesGuard)

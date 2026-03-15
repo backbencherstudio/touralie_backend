@@ -11,18 +11,38 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiExcludeEndpoint,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { memoryStorage } from 'multer';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { CreateUserDto } from './dto/create-user.dto';
-import { VerifyEmailDto } from './dto/verify-email.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  RegisterUserDto,
+  ForgotPasswordDto,
+  LoginDto,
+} from './dto/create-user.dto';
+import {
+  ResendVerificationEmailDto,
+  VerifyEmailDto,
+} from './dto/verify-email.dto';
+import {
+  ChangePasswordDto,
+  ResetPasswordDto,
+  UpdateUserDto,
+} from './dto/update-user.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import appConfig from '../../config/app.config';
 import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('auth')
@@ -30,110 +50,187 @@ import { AuthGuard } from '@nestjs/passport';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @ApiOperation({ summary: 'Get user details' })
+  @ApiOperation({
+    summary: 'Get user details',
+    description: `
+Get user details.
+
+Required fields:
+- none
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User details fetched successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'User details fetched successfully',
+        data: {
+          id: 'cmm632yhc0003kg9wfbdqce74',
+          name: 'name',
+          email: 'email',
+          avatar: 'avatar',
+          address: 'address',
+          phone_number: 'phone_number',
+          type: 'type',
+          gender: 'gender',
+          date_of_birth: '1998-05-20T00:00:00.000Z',
+          created_at: '2022-01-01T00:00:00.000Z',
+        },
+      },
+    },
+  })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@Req() req: Request) {
-    try {
-      const user_id = req.user.userId;
+    const user_id = req.user.userId;
 
-      const response = await this.authService.me(user_id);
+    const response = await this.authService.me(user_id);
 
-      return response;
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Failed to fetch user details',
-      };
-    }
+    return response;
   }
 
-  @ApiOperation({ summary: 'Register a user' })
+  @ApiOperation({
+    summary: 'Register a new user',
+    description: `
+Creates a new user account.
+
+Required fields:
+- name
+- email
+- password
+
+Optional fields:
+- weight
+- height
+- gender
+- date_of_birth
+- personalization
+`,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User registered successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'User registered successfully',
+        data: {
+          success: true,
+          message: 'We have sent an OTP code to your email',
+        },
+      },
+    },
+  })
   @Post('register')
-  async create(@Body() data: CreateUserDto) {
-    try {
-      const name = data.name;
-      const first_name = data.first_name;
-      const last_name = data.last_name;
-      const email = data.email;
-      const password = data.password;
-      const type = data.type;
+  async create(@Body() data: RegisterUserDto) {
+    const name = data.name;
+    const first_name = data.first_name;
+    const last_name = data.last_name;
+    const email = data.email;
+    const password = data.password;
+    const type = data.type;
+    const weight = data.weight;
+    const height = data.height;
+    const gender = data.gender;
+    const date_of_birth = data.date_of_birth;
+    const personalization = data.personalization;
 
-      if (!name) {
-        throw new HttpException('Name not provided', HttpStatus.UNAUTHORIZED);
-      }
-      if (!first_name) {
-        throw new HttpException(
-          'First name not provided',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-      if (!last_name) {
-        throw new HttpException(
-          'Last name not provided',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-      if (!email) {
-        throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
-      }
-      if (!password) {
-        throw new HttpException(
-          'Password not provided',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-
-      const response = await this.authService.register({
-        name: name,
-        first_name: first_name,
-        last_name: last_name,
-        email: email,
-        password: password,
-        type: type,
-      });
-
-      return response;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+    if (!name) {
+      throw new HttpException('Name not provided', HttpStatus.UNAUTHORIZED);
     }
+    // if (!first_name) {
+    //   throw new HttpException(
+    //     'First name not provided',
+    //     HttpStatus.UNAUTHORIZED,
+    //   );
+    // }
+    // if (!last_name) {
+    //   throw new HttpException(
+    //     'Last name not provided',
+    //     HttpStatus.UNAUTHORIZED,
+    //   );
+    // }
+    if (!email) {
+      throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
+    }
+    if (!password) {
+      throw new HttpException('Password not provided', HttpStatus.UNAUTHORIZED);
+    }
+
+    const response = await this.authService.register({
+      name: name,
+      first_name: first_name,
+      last_name: last_name,
+      email: email,
+      password: password,
+      weight: weight,
+      height: height,
+      gender: gender,
+      date_of_birth: date_of_birth,
+      personalization: personalization,
+      type: type,
+    });
+
+    return response;
   }
 
   // login user
-  @ApiOperation({ summary: 'Login user' })
+  @ApiOperation({
+    summary: 'Login user',
+    description: `
+Login user.
+
+Required fields:
+- email
+- password
+`,
+  })
+  @ApiBody({
+    description: 'Request body for login',
+    type: LoginDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User logged in successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Logged in successfully',
+        authorization: {
+          type: 'bearer',
+          access_token: 'access_token',
+          refresh_token: 'refresh_token',
+        },
+        type: 'user or admin',
+      },
+    },
+  })
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Req() req: Request, @Res() res: Response) {
-    try {
-      const user_id = req.user.id;
+    const user_id = req.user.id;
 
-      const user_email = req.user.email;
+    const user_email = req.user.email;
 
-      const response = await this.authService.login({
-        userId: user_id,
-        email: user_email,
-      });
+    const response = await this.authService.login({
+      userId: user_id,
+      email: user_email,
+    });
 
-      // store to secure cookies
-      res.cookie('refresh_token', response.authorization.refresh_token, {
-        httpOnly: true,
-        secure: true,
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      });
+    // store to secure cookies
+    res.cookie('refresh_token', response.authorization.refresh_token, {
+      httpOnly: true,
+      secure: true,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
 
-      res.json(response);
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
+    res.json(response);
   }
 
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Refresh token' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -158,7 +255,7 @@ export class AuthController {
       };
     }
   }
-
+  @ApiExcludeEndpoint()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('logout')
@@ -175,12 +272,13 @@ export class AuthController {
     }
   }
 
+  @ApiExcludeEndpoint()
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleLogin(): Promise<any> {
     return HttpStatus.OK;
   }
-
+  @ApiExcludeEndpoint()
   @Get('google/redirect')
   @UseGuards(AuthGuard('google'))
   async googleLoginRedirect(@Req() req: Request): Promise<any> {
@@ -191,23 +289,27 @@ export class AuthController {
   }
 
   // update user
-  @ApiOperation({ summary: 'Update user' })
+  @ApiOperation({
+    summary: 'Update User Profile',
+    description:
+      'Provide only the fields you wish to update. Any fields left empty or omitted will remain unchanged in the system.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User updated successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'User updated successfully',
+      },
+    },
+  })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('update')
+  @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('image', {
-      // storage: diskStorage({
-      //   destination:
-      //     appConfig().storageUrl.rootUrl + appConfig().storageUrl.avatar,
-      //   filename: (req, file, cb) => {
-      //     const randomName = Array(32)
-      //       .fill(null)
-      //       .map(() => Math.round(Math.random() * 16).toString(16))
-      //       .join('');
-      //     return cb(null, `${randomName}${file.originalname}`);
-      //   },
-      // }),
       storage: memoryStorage(),
     }),
   )
@@ -216,162 +318,261 @@ export class AuthController {
     @Body() data: UpdateUserDto,
     @UploadedFile() image: Express.Multer.File,
   ) {
-    try {
-      const user_id = req.user.userId;
-      const response = await this.authService.updateUser(user_id, data, image);
-      return response;
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Failed to update user',
-      };
-    }
+    const user_id = req.user.userId;
+    const response = await this.authService.updateUser(user_id, data, image);
+    return response;
   }
 
   // --------------change password---------
 
-  @ApiOperation({ summary: 'Forgot password' })
-  @Post('forgot-password')
-  async forgotPassword(@Body() data: { email: string }) {
-    try {
-      const email = data.email;
-      if (!email) {
-        throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
-      }
-      return await this.authService.forgotPassword(email);
-    } catch (error) {
-      return {
+  @ApiOperation({
+    summary: 'Forgot password',
+    description: `
+Forgot password.
+
+Required fields:
+- email
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Forgot password successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'We have sent an OTP code to your email',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Email not found',
+    schema: {
+      example: {
         success: false,
-        message: 'Something went wrong',
-      };
+        message: 'Email not found',
+      },
+    },
+  })
+  @Post('forgot-password')
+  async forgotPassword(@Body() data: ForgotPasswordDto) {
+    const email = data.email;
+    if (!email) {
+      throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
     }
+    return await this.authService.forgotPassword(email);
   }
 
   // verify email to verify the email
-  @ApiOperation({ summary: 'Verify email' })
+  @ApiOperation({
+    summary: 'Verify email',
+    description: `
+Verify email.
+
+Required fields:
+- email
+- token
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Email verified successfully',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid token',
+    schema: {
+      example: {
+        success: false,
+        message: 'Invalid token',
+      },
+    },
+  })
   @Post('verify-email')
   async verifyEmail(@Body() data: VerifyEmailDto) {
-    try {
-      const email = data.email;
-      const token = data.token;
-      if (!email) {
-        throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
-      }
-      if (!token) {
-        throw new HttpException('Token not provided', HttpStatus.UNAUTHORIZED);
-      }
-      return await this.authService.verifyEmail({
-        email: email,
-        token: token,
-      });
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Failed to verify email',
-      };
+    const email = data.email;
+    const token = data.token;
+    if (!email) {
+      throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
     }
+    if (!token) {
+      throw new HttpException('Token not provided', HttpStatus.UNAUTHORIZED);
+    }
+    return await this.authService.verifyEmail({
+      email: email,
+      token: token,
+    });
   }
 
   // resend verification email to verify the email
-  @ApiOperation({ summary: 'Resend verification email' })
-  @Post('resend-verification-email')
-  async resendVerificationEmail(@Body() data: { email: string }) {
-    try {
-      const email = data.email;
-      if (!email) {
-        throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
-      }
-      return await this.authService.resendVerificationEmail(email);
-    } catch (error) {
-      return {
+  @ApiOperation({
+    summary: 'Resend verification email',
+    description: `
+Resend verification email.
+
+Required fields:
+- email
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification email sent successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'We have sent a verification code to your email',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Email not found',
+    schema: {
+      example: {
         success: false,
-        message: 'Failed to resend verification email',
-      };
+        message: 'Email not found',
+      },
+    },
+  })
+  @Post('resend-verification-email')
+  async resendVerificationEmail(@Body() data: ResendVerificationEmailDto) {
+    const email = data.email;
+    if (!email) {
+      throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
     }
+    return await this.authService.resendVerificationEmail(email);
   }
 
   // reset password if user forget the password
-  @ApiOperation({ summary: 'Reset password' })
-  @Post('reset-password')
-  async resetPassword(
-    @Body() data: { email: string; token: string; password: string },
-  ) {
-    try {
-      const email = data.email;
-      const token = data.token;
-      const password = data.password;
-      if (!email) {
-        throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
-      }
-      if (!token) {
-        throw new HttpException('Token not provided', HttpStatus.UNAUTHORIZED);
-      }
-      if (!password) {
-        throw new HttpException(
-          'Password not provided',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-      return await this.authService.resetPassword({
-        email: email,
-        token: token,
-        password: password,
-      });
-    } catch (error) {
-      return {
+  @ApiOperation({
+    summary: 'Reset password',
+    description: `
+Reset password.
+
+Required fields:
+- email
+- token
+- password
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Password reset successfully',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Email not found',
+    schema: {
+      example: {
         success: false,
-        message: 'Something went wrong',
-      };
+        message: 'Email not found',
+      },
+    },
+  })
+  @Post('reset-password')
+  async resetPassword(@Body() data: ResetPasswordDto) {
+    const email = data.email;
+    const token = data.token;
+    const password = data.password;
+    if (!email) {
+      throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
     }
+    if (!token) {
+      throw new HttpException('Token not provided', HttpStatus.UNAUTHORIZED);
+    }
+    if (!password) {
+      throw new HttpException('Password not provided', HttpStatus.UNAUTHORIZED);
+    }
+    return await this.authService.resetPassword({
+      email: email,
+      token: token,
+      password: password,
+    });
   }
 
   // change password if user want to change the password
-  @ApiOperation({ summary: 'Change password' })
+  @ApiOperation({
+    summary: 'Change password',
+    description: `
+Change password.
+
+Required fields:
+- old_password
+- new_password
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Password updated successfully',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid password',
+    schema: {
+      example: {
+        success: false,
+        message: 'Invalid password',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      example: {
+        success: false,
+        message: 'User not found',
+      },
+    },
+  })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
-  async changePassword(
-    @Req() req: Request,
-    @Body() data: { email: string; old_password: string; new_password: string },
-  ) {
-    try {
-      // const email = data.email;
-      const user_id = req.user.userId;
+  async changePassword(@Req() req: Request, @Body() data: ChangePasswordDto) {
+    // const email = data.email;
+    const user_id = req.user.userId;
 
-      const oldPassword = data.old_password;
-      const newPassword = data.new_password;
-      // if (!email) {
-      //   throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
-      // }
-      if (!oldPassword) {
-        throw new HttpException(
-          'Old password not provided',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-      if (!newPassword) {
-        throw new HttpException(
-          'New password not provided',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-      return await this.authService.changePassword({
-        // email: email,
-        user_id: user_id,
-        oldPassword: oldPassword,
-        newPassword: newPassword,
-      });
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Failed to change password',
-      };
+    const oldPassword = data.old_password;
+    const newPassword = data.new_password;
+    // if (!email) {
+    //   throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
+    // }
+    if (!oldPassword) {
+      throw new BadRequestException('Old password not provided');
     }
+    if (!newPassword) {
+      throw new BadRequestException('New password not provided');
+    }
+    return await this.authService.changePassword({
+      // email: email,
+      user_id: user_id,
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+    });
   }
 
   // --------------end change password---------
 
   // -------change email address------
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'request email change' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -395,6 +596,7 @@ export class AuthController {
     }
   }
 
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Change email address' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -429,6 +631,7 @@ export class AuthController {
   // -------end change email address------
 
   // --------- 2FA ---------
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Generate 2FA secret' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -445,6 +648,7 @@ export class AuthController {
     }
   }
 
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Verify 2FA' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -462,6 +666,7 @@ export class AuthController {
     }
   }
 
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Enable 2FA' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -478,6 +683,7 @@ export class AuthController {
     }
   }
 
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Disable 2FA' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
