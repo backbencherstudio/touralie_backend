@@ -41,7 +41,7 @@ export class MembershipService {
   }
 
   async findAllMemberLeads(query: MemberLeadsQueryDto) {
-    const { page, limit, search } = query;
+    const { page, limit, search, start_date, end_date } = query;
     const skip = (page - 1) * limit;
     const take = limit;
     const where: Prisma.MemberLeadsWhereInput = search
@@ -51,6 +51,14 @@ export class MembershipService {
           phone: { contains: search, mode: 'insensitive' },
         }
       : {};
+
+    if (start_date && end_date) {
+      where.created_at = {
+        gte: start_date,
+        lte: end_date,
+      };
+    }
+
     const leads = await this.prisma.memberLeads.findMany({
       where,
       select: {
@@ -85,6 +93,10 @@ export class MembershipService {
         page,
         limit,
         total,
+        filters: {
+          start_date,
+          end_date,
+        },
       },
     };
   }

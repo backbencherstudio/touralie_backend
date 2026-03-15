@@ -93,9 +93,9 @@ model User {
   payment_transactions PaymentTransaction[]
   member_leads         MemberLeads[]
 
-  prescriptions   Prescription[]
   favorite_videos FavoriteVideo[]
   watch_histories WatchHistory[]
+  patients        Patient[]
 
   @@map("users")
 }
@@ -531,10 +531,26 @@ model Prescription {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  videos   Video[]
-  patients User[]
+  videos      Video[]
+  instruction Instruction?
+  patients    Patient[]
 
   @@map("prescriptions")
+}
+
+model Patient {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  prescription_id String
+  user_id         String
+
+  prescription Prescription @relation(fields: [prescription_id], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("patients")
 }
 
 model Instruction {
@@ -543,10 +559,11 @@ model Instruction {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  title       String
-  description String?
+  description     String?
+  points          String[]
+  prescription_id String   @unique
 
-  features String[]
+  prescription Prescription @relation(fields: [prescription_id], references: [id], onDelete: Cascade)
 
   @@map("instructions")
 }

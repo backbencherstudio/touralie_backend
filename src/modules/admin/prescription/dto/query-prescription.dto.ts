@@ -1,4 +1,10 @@
-import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, IntersectionType } from '@nestjs/swagger';
 
@@ -11,7 +17,7 @@ export class PaginationQueryDto {
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => (value ? Number(value) : 1))
-  page: number;
+  page: number = 1;
 
   @ApiProperty({
     description: 'Limit of items per page',
@@ -21,7 +27,7 @@ export class PaginationQueryDto {
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => (value ? Number(value) : 10))
-  limit: number;
+  limit: number = 10;
 }
 
 export class FiltersQueryDto {
@@ -48,7 +54,7 @@ export class FiltersQueryDto {
   end_date?: Date;
 }
 
-export class MemberLeadsQueryDto extends IntersectionType(
+export class PrescribedMembersQueryDto extends IntersectionType(
   PaginationQueryDto,
   FiltersQueryDto,
 ) {
