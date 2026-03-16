@@ -20,6 +20,7 @@ import { SojebStorage } from '../../common/lib/Disk/SojebStorage';
 import { DateHelper } from '../../common/helper/date.helper';
 import { StripePayment } from '../../common/lib/Payment/stripe/StripePayment';
 import { StringHelper } from '../../common/helper/string.helper';
+import { ActivityRepository } from '../../common/repository/activity/activity.repository';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +30,7 @@ export class AuthService {
     private mailService: MailService,
     private userRepository: UserRepository,
     private ucodeRepository: UcodeRepository,
+    private activityRepository: ActivityRepository,
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
@@ -354,6 +356,13 @@ export class AuthService {
       date_of_birth: date_of_birth,
       personalization: personalization,
     });
+
+    if (user.success) {
+      await this.activityRepository.createActivity(
+        'New Member Registered',
+        `A new member "${name}" (${email}) has joined the platform.`,
+      );
+    }
 
     if (user == null && user.success == false) {
       throw new InternalServerErrorException('Failed to create account');

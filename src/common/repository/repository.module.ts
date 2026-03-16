@@ -5,6 +5,7 @@ import { ChatRepository } from './chat/chat.repository';
 import { NotificationRepository } from './notification/notification.repository';
 import { TransactionRepository } from './transaction/transaction.repository';
 import { UcodeRepository } from './ucode/ucode.repository';
+import { ActivityRepository } from './activity/activity.repository';
 
 @Global()
 @Module({
@@ -15,6 +16,7 @@ import { UcodeRepository } from './ucode/ucode.repository';
     NotificationRepository,
     TransactionRepository,
     UcodeRepository,
+    ActivityRepository,
   ],
   exports: [
     UserRepository,
@@ -22,6 +24,7 @@ import { UcodeRepository } from './ucode/ucode.repository';
     NotificationRepository,
     TransactionRepository,
     UcodeRepository,
+    ActivityRepository,
   ],
 })
 export class RepositoryModule {}

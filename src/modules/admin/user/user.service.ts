@@ -9,11 +9,14 @@ import { DateHelper } from '../../../common/helper/date.helper';
 import { QueryUserDto, UserStatus, UserType } from './dto/query-user.dto';
 import { Prisma } from 'prisma/generated/client';
 
+import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService,
     private userRepository: UserRepository,
+    private activityRepository: ActivityRepository,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -165,6 +168,12 @@ export class UserService {
         where: { id: id },
         data: { approved_at: DateHelper.now() },
       });
+
+      await this.activityRepository.createActivity(
+        'Member Approved',
+        `Member "${user.name}" (${user.email}) has been approved by admin.`,
+      );
+
       return {
         success: true,
         message: 'User approved successfully',
@@ -192,6 +201,12 @@ export class UserService {
         where: { id: id },
         data: { approved_at: null },
       });
+
+      await this.activityRepository.createActivity(
+        'Member Rejected',
+        `Member "${user.name}" (${user.email}) has been rejected by admin.`,
+      );
+
       return {
         success: true,
         message: 'User rejected successfully',
@@ -218,6 +233,12 @@ export class UserService {
       where: { id: id },
       data: { status: user.status === 1 ? 2 : 1 },
     });
+
+    await this.activityRepository.createActivity(
+      user.status === 1 ? 'Member Banned' : 'Member Unbanned',
+      `Member "${user.name}" (${user.email}) has been ${user.status === 1 ? 'banned' : 'unbanned'} by admin.`,
+    );
+
     return {
       success: true,
       message:
@@ -234,7 +255,19 @@ export class UserService {
   }
 
   async remove(id: string) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
     const user = await this.userRepository.deleteUser(id);
+
+    if (user.success && existingUser) {
+      await this.activityRepository.createActivity(
+        'Member Deleted',
+        `Member "${existingUser.name}" (${existingUser.email}) has been deleted from the platform.`,
+      );
+    }
+
     return user;
   }
 }

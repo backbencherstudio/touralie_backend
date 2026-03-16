@@ -1,10 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { UserStatsQueryDto } from './dto/user-stats-query.dto';
+import {
+  PaginationQueryDto,
+  UserStatsQueryDto,
+} from './dto/query-overview.dto';
+import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
 
 @Injectable()
 export class OverviewService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activityRepository: ActivityRepository,
+  ) {}
+
+  async getActivities(query: PaginationQueryDto) {
+    const { page, limit } = query;
+    const skip = (page - 1) * limit;
+    const activities = await this.activityRepository.getActivities(skip, limit);
+    return {
+      success: true,
+      data: activities,
+      meta_data: {
+        page,
+        limit,
+        total: await this.activityRepository.count(),
+      },
+    };
+  }
 
   async getUserStats(query: UserStatsQueryDto) {
     const year = query.year ? parseInt(query.year) : new Date().getFullYear();
@@ -47,17 +69,5 @@ export class OverviewService {
       success: true,
       data: stats,
     };
-  }
-
-  findAll() {
-    return `This action returns all overview`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} overview`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} overview`;
   }
 }

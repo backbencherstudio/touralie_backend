@@ -5,9 +5,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { PrescribedMembersQueryDto } from './dto/query-prescription.dto';
 import { Prisma } from 'prisma/generated/client';
 
+import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+
 @Injectable()
 export class PrescriptionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activityRepository: ActivityRepository,
+  ) {}
 
   async createPrescription(createPrescriptionDto: CreatePrescriptionDto) {
     const prescription = await this.prisma.prescription.create({
@@ -34,6 +39,11 @@ export class PrescriptionService {
     if (!prescription) {
       throw new InternalServerErrorException('Failed to create prescription');
     }
+
+    await this.activityRepository.createActivity(
+      'New Prescription Created',
+      `A new prescription has been created with ${createPrescriptionDto.video_ids.length} videos for ${createPrescriptionDto.patient_ids.length} patients.`,
+    );
 
     return {
       success: true,
@@ -233,11 +243,19 @@ export class PrescriptionService {
       where: {
         id: patient.id,
       },
+      include: {
+        user: true,
+      },
     });
 
     if (!deletedPatient) {
       throw new InternalServerErrorException('Failed to delete prescription');
     }
+
+    await this.activityRepository.createActivity(
+      'Prescription Deleted',
+      `A prescription for member "${deletedPatient.user.name}" has been deleted.`,
+    );
 
     return {
       success: true,

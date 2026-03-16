@@ -12,9 +12,14 @@ import { LibraryQueryStatus, QueryLibraryDto } from './dto/query-library.dto';
 import { Prisma } from 'prisma/generated/client';
 import { CreateCategoryDto } from './dto/create-category.dto';
 
+import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+
 @Injectable()
 export class LibraryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activityRepository: ActivityRepository,
+  ) {}
 
   async initUpload(
     initVideoUploadDto: InitVideoUploadDto,
@@ -41,6 +46,11 @@ export class LibraryService {
         duration: initVideoUploadDto.duration || 0,
       },
     });
+
+    await this.activityRepository.createActivity(
+      'Video Upload Started',
+      `A new video upload has been initiated.`,
+    );
 
     const uploadUrl = await SojebStorage.getSignedUrl(key);
 
@@ -94,13 +104,20 @@ export class LibraryService {
       const permanentKey = video.url.replace(tempPrefix, permanentPrefix);
       await SojebStorage.move(video.url, permanentKey);
 
-      return await this.prisma.video.update({
+      const updatedVideo = await this.prisma.video.update({
         where: { id },
         data: {
           url: permanentKey,
           status: VideoStatus.DRAFT,
         },
       });
+
+      await this.activityRepository.createActivity(
+        'Video Upload Completed',
+        `Video "${updatedVideo.title || 'Untitled'}" upload has been completed and is now in draft.`,
+      );
+
+      return updatedVideo;
     }
 
     return {
@@ -114,6 +131,11 @@ export class LibraryService {
     const category = await this.prisma.category.create({
       data: createCategoryDto,
     });
+
+    await this.activityRepository.createActivity(
+      'Category Created',
+      `A new category "${category.title}" has been created.`,
+    );
 
     return {
       success: true,
@@ -139,6 +161,11 @@ export class LibraryService {
       where: { id },
       data: { deleted_at: new Date() },
     });
+
+    await this.activityRepository.createActivity(
+      'Category Deleted',
+      `Category "${category.title}" has been deleted.`,
+    );
 
     return {
       success: true,
@@ -292,7 +319,10 @@ export class LibraryService {
 
     // remove thumbnail field from data as it's not a prisma field
     delete data.thumbnail;
-
+    await this.activityRepository.createActivity(
+      'Video Updated',
+      `Video "${video.title}" metadata has been updated.`,
+    );
     return {
       success: true,
       message: 'Video updated successfully',
@@ -304,9 +334,17 @@ export class LibraryService {
   }
 
   async remove(id: string) {
+    const videoToDelete = await this.prisma.video.findUnique({ where: { id } });
     const video = await this.prisma.video.delete({
       where: { id },
     });
+
+    if (videoToDelete) {
+      await this.activityRepository.createActivity(
+        'Video Deleted',
+        `Video "${videoToDelete.title}" has been permanently deleted.`,
+      );
+    }
 
     return {
       success: true,
