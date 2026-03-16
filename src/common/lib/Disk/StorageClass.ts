@@ -51,4 +51,24 @@ export class StorageClass {
   public async delete(key: string) {
     return await this.adapter.delete(key);
   }
+
+  /**
+   * get signed url
+   * @param key
+   * @param expires
+   * @returns
+   */
+  public async getSignedUrl(key: string, expires?: number) {
+    return await this.adapter.getSignedUrl(key, expires);
+  }
+
+  /**
+   * move file
+   * @param from
+   * @param to
+   * @returns
+   */
+  public async move(from: string, to: string) {
+    return await this.adapter.move(from, to);
+  }
 }

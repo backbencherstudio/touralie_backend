@@ -87,6 +87,28 @@ export class SojebStorage {
   }
 
   /**
+   * get signed url
+   * @param key
+   * @param expires
+   * @returns
+   */
+  public static async getSignedUrl(key: string, expires?: number) {
+    const disk = this.storageDisk();
+    return await disk.getSignedUrl(key, expires);
+  }
+
+  /**
+   * move file
+   * @param from
+   * @param to
+   * @returns
+   */
+  public static async move(from: string, to: string) {
+    const disk = this.storageDisk();
+    return await disk.move(from, to);
+  }
+
+  /**
    * process storage disk type
    * @returns
    */

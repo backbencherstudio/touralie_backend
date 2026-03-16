@@ -85,4 +85,35 @@ export class LocalAdapter implements IStorage {
       if (err.code !== 'ENOENT') console.error(err);
     }
   }
+
+  /**
+   * get signed url
+   * @param key
+   * @param expires
+   * @returns
+   */
+  async getSignedUrl(key: string, expires?: number): Promise<string> {
+    return this.url(key);
+  }
+
+  /**
+   * move file
+   * @param from
+   * @param to
+   * @returns
+   */
+  async move(from: string, to: string): Promise<any> {
+    try {
+      const fromPath = path.join(this._config.connection.rootUrl, from);
+      const toPath = path.join(this._config.connection.rootUrl, to);
+      const dirPath = path.dirname(toPath);
+
+      await fs.mkdir(dirPath, { recursive: true });
+      await fs.rename(fromPath, toPath);
+      return true;
+    } catch (err) {
+      console.log(err);
+      return false;
+    }
+  }
 }

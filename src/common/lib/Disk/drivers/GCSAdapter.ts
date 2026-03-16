@@ -96,4 +96,38 @@ export class GCSAdapter implements IStorage {
       throw error;
     }
   }
+
+  /**
+   * Get signed URL for uploading (PUT)
+   * @param key
+   * @param expires seconds
+   */
+  async getSignedUrl(key: string, expires: number = 3600): Promise<string> {
+    try {
+      const file = this.bucket.file(key);
+      const [url] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'write',
+        expires: Date.now() + expires * 1000,
+      });
+      return url;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Move file within bucket
+   * @param from
+   * @param to
+   */
+  async move(from: string, to: string): Promise<any> {
+    try {
+      const file = this.bucket.file(from);
+      await file.move(to);
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
 }

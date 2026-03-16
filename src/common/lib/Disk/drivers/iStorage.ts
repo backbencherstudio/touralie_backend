@@ -32,4 +32,16 @@ export interface IStorage {
    * @param key
    */
   delete(key: string): Promise<any>;
+  /**
+   * get signed url for uploading/downloading
+   * @param key
+   * @param expires seconds
+   */
+  getSignedUrl(key: string, expires?: number): Promise<string>;
+  /**
+   * move file
+   * @param from
+   * @param to
+   */
+  move(from: string, to: string): Promise<any>;
 }
