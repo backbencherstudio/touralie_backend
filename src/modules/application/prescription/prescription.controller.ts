@@ -76,61 +76,60 @@ export class PrescriptionController {
     return this.prescriptionService.findAllPrescriptions(query, userId);
   }
 
-  // @Get(':id')
-  // @ApiOperation({
-  //   summary: 'Get single prescription details (User Only)',
-  //   description:
-  //     'Returns video details along with the latest clinical instruction for that video.',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       success: { type: 'boolean', example: true },
-  //       message: {
-  //         type: 'string',
-  //         example: 'Prescription details found successfully',
-  //       },
-  //       data: {
-  //         type: 'object',
-  //         properties: {
-  //           id: { type: 'string' },
-  //           title: { type: 'string' },
-  //           description: { type: 'string' },
-  //           url: { type: 'string' },
-  //           thumbnail_url: { type: 'string' },
-  //           status: { type: 'string' },
-  //           category: { type: 'string' },
-  //           duration: { type: 'number' },
-  //           level: { type: 'string' },
-  //           instruction: {
-  //             type: 'object',
-  //             properties: {
-  //               description: { type: 'string' },
-  //               points: { type: 'array', items: { type: 'string' } },
-  //             },
-  //           },
-  //           video_chapters: {
-  //             type: 'array',
-  //             items: {
-  //               type: 'object',
-  //               properties: {
-  //                 id: { type: 'string' },
-  //                 title: { type: 'string' },
-  //                 start_time: { type: 'string' },
-  //                 end_time: { type: 'string' },
-  //                 thumbnail_url: { type: 'string' },
-  //               },
-  //             },
-  //           },
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
-  // findOnePrescription(@Param('id') id: string, @Req() req: Request) {
-  //   const { userId } = req?.user as any;
-  //   return this.prescriptionService.findOnePrescription(id, userId);
-  // }
+  @ApiOperation({
+    summary: 'Get the next/last video to resume (User Only)',
+    description:
+      'Returns the video the user was last watching (if incomplete), or the next unplayed video in the queue.',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            id: { type: 'string' },
+            title: { type: 'string' },
+            description: { type: 'string' },
+            url: { type: 'string' },
+            thumbnail_url: { type: 'string' },
+            category: { type: 'string' },
+            duration: { type: 'number' },
+            level: { type: 'string' },
+            is_completed: { type: 'boolean' },
+            last_watch_position: { type: 'number' },
+            watch_status: { type: 'string' },
+            instruction: {
+              type: 'object',
+              properties: {
+                description: { type: 'string' },
+                points: { type: 'array', items: { type: 'string' } },
+              },
+            },
+            video_chapters: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  title: { type: 'string' },
+                  start_time: { type: 'string' },
+                  end_time: { type: 'string' },
+                  thumbnail_url: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @Get('resume')
+  async getResumeVideo(@Req() req: Request) {
+    const { userId } = req?.user as any;
+    return this.prescriptionService.lastPlayedPrescriptionVideo(userId);
+  }
 }
