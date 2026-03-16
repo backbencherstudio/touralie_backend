@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { QueryPublicLibraryDto } from './dto/query-library.dto';
+import {
+  QueryPublicLibraryDto,
+  QueryWatchHistoryDto,
+} from './dto/query-library.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from 'prisma/generated/client';
+import { UpdateWatchProgressDto } from './dto/update-watch-progress.dto';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
 @Injectable()
@@ -35,7 +39,6 @@ export class LibraryService {
         v.duration,
         v.level,
         v.created_at,
-        v.status,
         v.thumbnail_url,
         c.title as category_title,
         (SELECT COUNT(*)::int FROM "VideoChapters" vc WHERE vc.video_id = v.id) as chapters_count,
@@ -81,7 +84,6 @@ export class LibraryService {
       duration: video.duration,
       level: video.level,
       created_at: video.created_at,
-      status: video.status,
       is_favorite: video.is_favorite,
       thumbnail_url: video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
@@ -108,6 +110,232 @@ export class LibraryService {
     };
   }
 
+  async findAllCategories() {
+    const categories = await this.prisma.category.findMany({
+      select: {
+        id: true,
+        title: true,
+      },
+      orderBy: {
+        title: 'asc',
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Categories found successfully',
+      data: categories,
+    };
+  }
+
+  async findAllFavoriteVideos(query: QueryPublicLibraryDto, userId: string) {
+    const { page, limit, search, start_date, end_date, category_id } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.FavoriteVideoWhereInput = {
+      user_id: userId,
+    };
+
+    if (search) {
+      where.OR = [
+        {
+          video: {
+            title: { contains: search, mode: 'insensitive' },
+          },
+        },
+        {
+          video: {
+            description: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
+    }
+
+    if (category_id) {
+      where.video.category_id = category_id;
+    }
+
+    if (start_date || end_date) {
+      where.video.created_at = {
+        ...(start_date && { gte: start_date }),
+        ...(end_date && { lte: end_date }),
+      };
+    }
+
+    const favoriteVideo = await this.prisma.favoriteVideo.findMany({
+      where,
+      select: {
+        id: true,
+        video: {
+          select: {
+            id: true,
+            title: true,
+            duration: true,
+            level: true,
+            created_at: true,
+            thumbnail_url: true,
+            category: true,
+            _count: {
+              select: {
+                video_chapters: true,
+              },
+            },
+          },
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    const total = await this.prisma.favoriteVideo.count({ where });
+
+    const formattedVideos = favoriteVideo.map((video) => ({
+      id: video.video.id,
+      title: video.video.title,
+      duration: video.video.duration,
+      level: video.video.level,
+      created_at: video.video.created_at,
+      is_favorite: true,
+      thumbnail_url: video.video.thumbnail_url
+        ? SojebStorage.url(video.video.thumbnail_url)
+        : null,
+      category: video.video.category.title,
+      chapters_count: video.video._count.video_chapters,
+    }));
+
+    return {
+      success: true,
+      message: 'Videos found successfully',
+      data: formattedVideos,
+      meta_data: {
+        page,
+        limit,
+        total,
+        search,
+        filter: {
+          category_id,
+          start_date,
+          end_date,
+        },
+      },
+    };
+  }
+
+  async findAllWatchHistory(query: QueryWatchHistoryDto, userId: string) {
+    const {
+      page,
+      limit,
+      search,
+      start_date,
+      end_date,
+      category_id,
+      watch_status,
+    } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.WatchHistoryWhereInput = {
+      user_id: userId,
+    };
+
+    if (search) {
+      where.OR = [
+        {
+          video: {
+            title: { contains: search, mode: 'insensitive' },
+          },
+        },
+        {
+          video: {
+            description: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
+    }
+
+    if (category_id) {
+      where.video.category_id = category_id;
+    }
+
+    if (start_date || end_date) {
+      where.video.created_at = {
+        ...(start_date && { gte: start_date }),
+        ...(end_date && { lte: end_date }),
+      };
+    }
+
+    if (watch_status) {
+      if (watch_status === 'COMPLETED') {
+        where.is_completed = true;
+      } else if (watch_status === 'IN_PROGRESS') {
+        where.is_completed = false;
+      }
+    }
+
+    const watchHistory = await this.prisma.watchHistory.findMany({
+      where,
+      select: {
+        id: true,
+        video: {
+          select: {
+            id: true,
+            title: true,
+            duration: true,
+            level: true,
+            created_at: true,
+            thumbnail_url: true,
+            category: true,
+            _count: {
+              select: {
+                video_chapters: true,
+              },
+            },
+          },
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    const total = await this.prisma.watchHistory.count({ where });
+
+    const formattedVideos = watchHistory.map((video) => ({
+      id: video.video.id,
+      title: video.video.title,
+      duration: video.video.duration,
+      level: video.video.level,
+      created_at: video.video.created_at,
+      is_favorite: true,
+      thumbnail_url: video.video.thumbnail_url
+        ? SojebStorage.url(video.video.thumbnail_url)
+        : null,
+      category: video.video.category.title,
+      chapters_count: video.video._count.video_chapters,
+    }));
+
+    return {
+      success: true,
+      message: 'Watch history found successfully',
+      data: formattedVideos,
+      meta_data: {
+        page,
+        limit,
+        total,
+        search,
+        filter: {
+          category_id,
+          start_date,
+          end_date,
+        },
+      },
+    };
+  }
+
   async findOne(id: string, userId?: string) {
     const video = await this.prisma.video.findUnique({
       where: { id, deleted_at: null, status: 'PUBLISHED' },
@@ -118,7 +346,6 @@ export class LibraryService {
         duration: true,
         level: true,
         created_at: true,
-        status: true,
         url: true,
         thumbnail_url: true,
         category: {
@@ -151,6 +378,19 @@ export class LibraryService {
       is_favorite = !!favorite;
     }
 
+    let last_watch_position = 0;
+    let is_completed = false;
+
+    if (userId) {
+      const watchHistory = await this.prisma.watchHistory.findFirst({
+        where: { video_id: id, user_id: userId },
+      });
+      if (watchHistory) {
+        last_watch_position = watchHistory.last_played_position ?? 0;
+        is_completed = watchHistory.is_completed;
+      }
+    }
+
     const formattedVideo = {
       id: video.id,
       title: video.title,
@@ -158,8 +398,9 @@ export class LibraryService {
       duration: video.duration,
       level: video.level,
       created_at: video.created_at,
-      status: video.status,
       is_favorite,
+      last_watch_position,
+      is_completed,
       url: video.url ? SojebStorage.url(video.url) : null,
       thumbnail_url: video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
@@ -213,6 +454,52 @@ export class LibraryService {
     return {
       success: true,
       message: 'Video favorited successfully',
+    };
+  }
+
+  async updateProgress(
+    videoId: string,
+    userId: string,
+    dto: UpdateWatchProgressDto,
+  ) {
+    const video = await this.prisma.video.findUnique({
+      where: { id: videoId, deleted_at: null },
+    });
+
+    if (!video) {
+      throw new NotFoundException('Video not found');
+    }
+
+    const watchHistory = await this.prisma.watchHistory.findFirst({
+      where: { video_id: videoId, user_id: userId },
+    });
+
+    const is_completed =
+      dto.last_played_position >= (video.duration ?? 0) * 0.9;
+
+    if (watchHistory) {
+      await this.prisma.watchHistory.update({
+        where: { id: watchHistory.id },
+        data: {
+          last_played_position: dto.last_played_position,
+          is_completed: is_completed || watchHistory.is_completed,
+          updated_at: new Date(),
+        },
+      });
+    } else {
+      await this.prisma.watchHistory.create({
+        data: {
+          video_id: videoId,
+          user_id: userId,
+          last_played_position: dto.last_played_position,
+          is_completed: is_completed,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Watch progress updated successfully',
     };
   }
 }

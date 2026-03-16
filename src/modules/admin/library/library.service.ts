@@ -38,6 +38,7 @@ export class LibraryService {
         url: key,
         status: VideoStatus.UPLOADING,
         thumbnail_url: thumbnailUrl,
+        duration: initVideoUploadDto.duration || 0,
       },
     });
 
@@ -303,11 +304,8 @@ export class LibraryService {
   }
 
   async remove(id: string) {
-    const video = await this.prisma.video.update({
+    const video = await this.prisma.video.delete({
       where: { id },
-      data: {
-        deleted_at: new Date(),
-      },
     });
 
     return {

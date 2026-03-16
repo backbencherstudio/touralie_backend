@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class InitVideoUploadDto {
   @ApiProperty({
@@ -9,6 +9,15 @@ export class InitVideoUploadDto {
   @IsString()
   @IsNotEmpty()
   filename: string;
+
+  @ApiProperty({
+    description: 'Video duration in seconds',
+    example: 300,
+    required: false,
+  })
+  @IsNumber()
+  @IsOptional()
+  duration?: number;
 
   @ApiProperty({
     description: 'Thumbnail image',

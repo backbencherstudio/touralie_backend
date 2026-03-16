@@ -76,3 +76,20 @@ export class QueryPublicLibraryDto extends IntersectionType(
   @IsString()
   search?: string;
 }
+
+export enum WatchStatus {
+  ALL = 'ALL',
+  COMPLETED = 'COMPLETED',
+  IN_PROGRESS = 'IN_PROGRESS',
+}
+
+export class QueryWatchHistoryDto extends QueryPublicLibraryDto {
+  @ApiProperty({
+    description: 'Watch status of the video',
+    example: WatchStatus.ALL,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(WatchStatus)
+  watch_status?: WatchStatus;
+}
