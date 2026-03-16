@@ -204,6 +204,29 @@ export class UserService {
     }
   }
 
+  async banUnbanUser(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: id },
+    });
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found',
+      };
+    }
+    await this.prisma.user.update({
+      where: { id: id },
+      data: { status: user.status === 1 ? 2 : 1 },
+    });
+    return {
+      success: true,
+      message:
+        user.status === 1
+          ? 'User banned successfully'
+          : 'User unbanned successfully',
+    };
+  }
+
   async update(id: string, updateUserDto: UpdateUserByAdminDto) {
     const user = await this.userRepository.updateUser(id, updateUserDto);
 

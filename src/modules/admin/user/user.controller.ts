@@ -151,6 +151,31 @@ export class UserController {
   }
 
   @ApiOperation({
+    summary: 'Ban or unban a user',
+    description: `
+    Ban or unban a user
+    
+    Path Parameters:
+    - id: User ID
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Ban or unban a user',
+    schema: {
+      example: {
+        success: true,
+        message: 'User banned or unbanned successfully',
+      },
+    },
+  })
+  @Patch(':id/ban-unban')
+  async banUnbanUser(@Param('id') id: string) {
+    const user = await this.userService.banUnbanUser(id);
+    return user;
+  }
+
+  @ApiOperation({
     summary: 'Update a user',
     description: `
     Update a user
@@ -183,15 +208,8 @@ export class UserController {
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserByAdminDto,
   ) {
-    try {
-      const user = await this.userService.update(id, updateUserDto);
-      return user;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
+    const user = await this.userService.update(id, updateUserDto);
+    return user;
   }
 
   @ApiOperation({
