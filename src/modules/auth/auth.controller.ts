@@ -11,6 +11,9 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
   BadRequestException,
 } from '@nestjs/common';
 import {
@@ -318,7 +321,16 @@ Required fields:
   async updateUser(
     @Req() req: Request,
     @Body() data: UpdateUserDto,
-    @UploadedFile() image: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    image: Express.Multer.File,
   ) {
     const user_id = req.user.userId;
     const response = await this.authService.updateUser(user_id, data, image);

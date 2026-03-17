@@ -92,9 +92,13 @@ export class SojebStorage {
    * @param expires
    * @returns
    */
-  public static async getSignedUrl(key: string, expires?: number) {
+  public static async getSignedUrl(
+    key: string,
+    expires?: number,
+    contentType?: string,
+  ) {
     const disk = this.storageDisk();
-    return await disk.getSignedUrl(key, expires);
+    return await disk.getSignedUrl(key, expires, contentType);
   }
 
   /**

@@ -58,8 +58,12 @@ export class StorageClass {
    * @param expires
    * @returns
    */
-  public async getSignedUrl(key: string, expires?: number) {
-    return await this.adapter.getSignedUrl(key, expires);
+  public async getSignedUrl(
+    key: string,
+    expires?: number,
+    contentType?: string,
+  ) {
+    return await this.adapter.getSignedUrl(key, expires, contentType);
   }
 
   /**

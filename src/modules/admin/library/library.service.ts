@@ -51,7 +51,11 @@ export class LibraryService {
       `A new video upload has been initiated.`,
     );
 
-    const uploadUrl = await SojebStorage.getSignedUrl(key);
+    const uploadUrl = await SojebStorage.getSignedUrl(
+      key,
+      3600,
+      this.getContentType(filename),
+    );
 
     return {
       success: true,
@@ -79,7 +83,11 @@ export class LibraryService {
       },
     });
 
-    const uploadUrl = await SojebStorage.getSignedUrl(key);
+    const uploadUrl = await SojebStorage.getSignedUrl(
+      key,
+      3600,
+      this.getContentType(filename),
+    );
 
     return {
       success: true,
@@ -508,5 +516,20 @@ export class LibraryService {
       return parts[0] * 60 + parts[1];
     }
     return Number(time);
+  }
+
+  private getContentType(filename: string): string {
+    const extension = filename.split('.').pop()?.toLowerCase();
+    const mimeTypes = {
+      mp4: 'video/mp4',
+      mkv: 'video/x-matroska',
+      mov: 'video/quicktime',
+      avi: 'video/x-msvideo',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+    };
+    return mimeTypes[extension] || 'application/octet-stream';
   }
 }

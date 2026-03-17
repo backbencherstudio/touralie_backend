@@ -37,7 +37,11 @@ export interface IStorage {
    * @param key
    * @param expires seconds
    */
-  getSignedUrl(key: string, expires?: number): Promise<string>;
+  getSignedUrl(
+    key: string,
+    expires?: number,
+    contentType?: string,
+  ): Promise<string>;
   /**
    * move file
    * @param from

@@ -9,6 +9,9 @@ import {
   UseInterceptors,
   UploadedFile,
   UseGuards,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
   Query,
 } from '@nestjs/common';
 import { LibraryService } from './library.service';
@@ -74,7 +77,16 @@ export class LibraryController {
   @Post('init-upload')
   initUpload(
     @Body() initVideoUploadDto: InitVideoUploadDto,
-    @UploadedFile() thumbnail?: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    thumbnail?: Express.Multer.File,
   ) {
     return this.libraryService.initUpload(initVideoUploadDto, thumbnail);
   }
@@ -379,7 +391,16 @@ export class LibraryController {
   update(
     @Param('id') id: string,
     @Body() updateLibraryDto: UpdateLibraryDto,
-    @UploadedFile() thumbnail?: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    thumbnail?: Express.Multer.File,
   ) {
     return this.libraryService.update(id, updateLibraryDto, thumbnail);
   }
@@ -439,7 +460,16 @@ export class LibraryController {
   addChapter(
     @Param('id') id: string,
     @Body() chapterData: CreateChapterDto,
-    @UploadedFile() thumbnail?: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    thumbnail?: Express.Multer.File,
   ) {
     return this.libraryService.addChapter(id, chapterData, thumbnail);
   }
@@ -510,7 +540,16 @@ export class LibraryController {
   updateChapter(
     @Param('chapterId') chapterId: string,
     @Body() chapterData: UpdateChapterDtoLocal,
-    @UploadedFile() thumbnail?: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    thumbnail?: Express.Multer.File,
   ) {
     return this.libraryService.updateChapter(chapterId, chapterData, thumbnail);
   }

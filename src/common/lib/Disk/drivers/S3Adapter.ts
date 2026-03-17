@@ -122,14 +122,22 @@ export class S3Adapter implements IStorage {
    * @param expires
    * @returns
    */
-  async getSignedUrl(key: string, expires: number = 3600): Promise<string> {
+  async getSignedUrl(
+    key: string,
+    expires: number = 3600,
+    contentType?: string,
+  ): Promise<string> {
     try {
-      const params = {
+      const params: any = {
         Bucket: this._config.connection.awsBucket,
         Key: key,
         Expires: expires,
-        // ContentType: 'video/mp4', // Optional: could be passed as arg
       };
+
+      if (contentType) {
+        params.ContentType = contentType;
+      }
+
       const url = await this.s3.getSignedUrlPromise('putObject', params);
       return url;
     } catch (error) {

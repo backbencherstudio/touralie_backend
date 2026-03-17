@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Touralie Video Tester</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+            --radius: 0.125rem; /* sm radius */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem 1rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: var(--primary);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-group { margin-bottom: 1rem; }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.4rem;
+        }
+
+        input[type="text"], input[type="file"], input[type="number"] {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        input:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.25rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+            width: 100%;
+        }
+
+        button:hover { background: var(--primary-hover); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .progress-wrapper {
+            margin-top: 1rem;
+            background: #e2e8f0;
+            height: 10px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        #responseContainer {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #38bdf8;
+            padding: 1rem;
+            border-radius: var(--radius);
+            font-size: 0.85rem;
+            overflow-x: auto;
+            max-height: 250px;
+        }
+
+        .video-container {
+            margin-top: 1rem;
+            background: #000;
+            aspect-ratio: 16 / 9;
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        video { width: 100%; height: 100%; }
+
+        .flex { display: flex; gap: 0.5rem; align-items: flex-end; }
+        .flex > div { flex: 1; }
+        .flex button { width: auto; }
+
+        .note {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Video System Tester (Fetch API)</h1>
+
+        <!-- UPLOAD SECTION -->
+        <div class="card">
+            <div class="card-title">Direct Storage Upload</div>
+            <div class="form-group">
+                <label>Pre-signed Upload URL</label>
+                <input type="text" id="uploadUrl" placeholder="Paste the upload_url here...">
+            </div>
+            <div class="form-group">
+                <label>Video Key (Optional)</label>
+                <input type="text" id="videoKey" placeholder="e.g. temp-videos/xyz.mp4">
+            </div>
+            <div class="form-group">
+                <label>Select Video File</label>
+                <input type="file" id="videoFile" accept="video/*">
+            </div>
+            <button id="uploadBtn" onclick="performUpload()">Upload with Fetch</button>
+            <p class="note">* Note: Fetch doesn't support real-time upload progress. Bar will jump to 100% when done.</p>
+
+            <div class="progress-wrapper" id="progressWrapper">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div id="responseContainer">
+                <label style="margin-top: 1rem;">Server Response:</label>
+                <pre><code id="responseCode"></code></pre>
+            </div>
+        </div>
+
+        <!-- PLAYBACK SECTION -->
+        <div class="card">
+            <div class="card-title">Video Playback & Chapter Test</div>
+            <div class="form-group">
+                <label>Video URL</label>
+                <div class="flex">
+                    <div><input type="text" id="playUrl" placeholder="Enter video URL to play..."></div>
+                    <button onclick="loadVideo()" style="background: #10b981;">Play Video</button>
+                </div>
+            </div>
+
+            <div class="video-container">
+                <video id="videoPlayer" controls></video>
+            </div>
+
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label>Chapter Test (Start Time in Seconds)</label>
+                <div class="flex">
+                    <div><input type="number" id="startTime" placeholder="e.g. 30"></div>
+                    <button onclick="seekToTime()" style="background: #6366f1;">Jump to Time</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressWrapper = document.getElementById('progressWrapper');
+        const progressBar = document.getElementById('progressBar');
+        const responseContainer = document.getElementById('responseContainer');
+        const responseCode = document.getElementById('responseCode');
+        const videoPlayer = document.getElementById('videoPlayer');
+
+        async function performUpload() {
+            const url = document.getElementById('uploadUrl').value.trim();
+            const file = document.getElementById('videoFile').files[0];
+
+            if (!url) return alert('Please enter the Upload URL.');
+            if (!file) return alert('Please select a video file.');
+
+            uploadBtn.disabled = true;
+            progressWrapper.style.display = 'block';
+            progressBar.style.width = '30%'; // Fake start
+            responseContainer.style.display = 'none';
+
+            try {
+                // Read file as ArrayBuffer to avoid automatic Content-Type headers
+                const arrayBuffer = await file.arrayBuffer();
+                const contentType = getContentType(file.name);
+                
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    body: arrayBuffer,
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': contentType
+                    }
+                });
+
+                progressBar.style.width = '100%';
+                uploadBtn.disabled = false;
+                responseContainer.style.display = 'block';
+
+                const responseData = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    info: "Fetch upload complete. Response body is usually empty for S3 PUT."
+                };
+
+                responseCode.textContent = JSON.stringify(responseData, null, 2);
+
+                if (response.ok) {
+                    alert('Upload Successful!');
+                } else {
+                    const errorText = await response.text();
+                    console.error('Upload error:', errorText);
+                    alert(`Upload failed with status ${response.status}`);
+                }
+            } catch (err) {
+                uploadBtn.disabled = false;
+                console.error('Fetch error:', err);
+                alert('Network error or CORS issue. Check console.');
+            }
+        }
+
+        function loadVideo() {
+            const url = document.getElementById('playUrl').value.trim();
+            if (!url) return alert('Enter a video URL.');
+            videoPlayer.src = url;
+            videoPlayer.load();
+            videoPlayer.play();
+        }
+
+        function seekToTime() {
+            const time = parseFloat(document.getElementById('startTime').value);
+            if (isNaN(time)) return alert('Enter a valid time in seconds.');
+            
+            player.currentTime = time;
+            player.play();
+        }
+
+        function getContentType(filename) {
+            const extension = filename.split('.').pop().toLowerCase();
+            const mimeTypes = {
+                'mp4': 'video/mp4',
+                'mkv': 'video/x-matroska',
+                'mov': 'video/quicktime',
+                'avi': 'video/x-msvideo',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'webp': 'image/webp'
+            };
+            return mimeTypes[extension] || 'application/octet-stream';
+        }
+    </script>
+</body>
+</html>

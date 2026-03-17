@@ -1,6 +1,10 @@
 import {
   Controller,
   Get,
+  HttpStatus,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
   Post,
   Res,
   StreamableFile,
@@ -15,6 +19,7 @@ import { join } from 'path';
 import { Response } from 'express';
 import { Readable } from 'stream';
 import { ApiExcludeController } from '@nestjs/swagger';
+
 @ApiExcludeController()
 @Controller()
 export class AppController {
@@ -65,9 +70,47 @@ export class AppController {
   @UseInterceptors(
     FileInterceptor('image', { storage: multer.memoryStorage() as any }),
   )
-  async test(@UploadedFile() image?: Express.Multer.File) {
+  async test(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    image?: Express.Multer.File,
+  ) {
     try {
       const result = await this.appService.test(image);
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  @Post('test-video-upload')
+  @UseInterceptors(
+    FileInterceptor('video', { storage: multer.memoryStorage() as any }),
+  )
+  async testVideo(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 1024 * 10 }), // 10GB
+          new FileTypeValidator({ fileType: '.(mp4|mkv|avi|mov)' }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    video?: Express.Multer.File,
+  ) {
+    try {
+      const result = await this.appService.test(video);
       return result;
     } catch (error) {
       return {
