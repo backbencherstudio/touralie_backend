@@ -32,7 +32,11 @@ export class LibraryService {
     if (thumbnailFile) {
       const thumbExtension = thumbnailFile.originalname.split('.').pop();
       const thumbKey = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(thumbKey, thumbnailFile.buffer);
+      await SojebStorage.put(
+        thumbKey,
+        thumbnailFile.buffer,
+        thumbnailFile.mimetype,
+      );
       thumbnailUrl = thumbKey;
     }
 
@@ -329,7 +333,11 @@ export class LibraryService {
 
       const thumbExtension = thumbnailFile.originalname.split('.').pop();
       const thumbKey = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(thumbKey, thumbnailFile.buffer);
+      await SojebStorage.put(
+        thumbKey,
+        thumbnailFile.buffer,
+        thumbnailFile.mimetype,
+      );
       data.thumbnail_url = thumbKey;
     }
 
@@ -392,7 +400,7 @@ export class LibraryService {
     if (thumbnail) {
       const thumbExtension = thumbnail.originalname.split('.').pop();
       thumbnailUrl = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(thumbnailUrl, thumbnail.buffer);
+      await SojebStorage.put(thumbnailUrl, thumbnail.buffer, thumbnail.mimetype);
     }
 
     const { thumbnail: _, ...rest } = chapterData;
@@ -439,7 +447,7 @@ export class LibraryService {
       }
       const thumbExtension = thumbnail.originalname.split('.').pop();
       const thumbnailUrl = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(thumbnailUrl, thumbnail.buffer);
+      await SojebStorage.put(thumbnailUrl, thumbnail.buffer, thumbnail.mimetype);
       data.thumbnail_url = thumbnailUrl;
     }
 
