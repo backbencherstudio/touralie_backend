@@ -25,7 +25,7 @@ export interface IStorage {
    * @param key
    * @param value
    */
-  put(key: string, value: any): Promise<any>;
+  put(key: string, value: any, contentType?: string): Promise<any>;
 
   /**
    * delete data

@@ -287,6 +287,15 @@ export class LibraryService {
       video.thumbnail_url = video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
         : null;
+
+      if (video.video_chapters) {
+        video.video_chapters = video.video_chapters.map((chapter) => ({
+          ...chapter,
+          thumbnail_url: chapter.thumbnail_url
+            ? SojebStorage.url(chapter.thumbnail_url)
+            : null,
+        })) as any;
+      }
     }
 
     return {
@@ -471,10 +480,17 @@ export class LibraryService {
       orderBy: { start_time: 'asc' },
     });
 
+    const formattedChapters = chapters.map((chapter) => ({
+      ...chapter,
+      thumbnail_url: chapter.thumbnail_url
+        ? SojebStorage.url(chapter.thumbnail_url)
+        : null,
+    }));
+
     return {
       success: true,
       message: 'Chapters fetched successfully',
-      data: chapters,
+      data: formattedChapters,
     };
   }
 

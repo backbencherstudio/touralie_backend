@@ -4,6 +4,7 @@ import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PrescribedMembersQueryDto } from './dto/query-prescription.dto';
 import { Prisma } from 'prisma/generated/client';
+import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
 
@@ -175,6 +176,7 @@ export class PrescriptionService {
                     title: true,
                     start_time: true,
                     end_time: true,
+                    thumbnail_url: true,
                   },
                 },
                 category: {
@@ -209,15 +211,20 @@ export class PrescriptionService {
         title: video.title,
         description: video.description,
         duration: video.duration,
-        thumbnail_url: video.thumbnail_url,
-        url: video.url,
+        thumbnail_url: video.thumbnail_url
+          ? SojebStorage.url(video.thumbnail_url)
+          : null,
+        url: video.url ? SojebStorage.url(video.url) : null,
         video_chapters: video.video_chapters.map((chapter) => ({
           id: chapter.id,
           title: chapter.title,
           start_time: chapter.start_time,
           end_time: chapter.end_time,
+          thumbnail_url: (chapter as any).thumbnail_url
+            ? SojebStorage.url((chapter as any).thumbnail_url)
+            : null,
         })),
-        category: video.category.title,
+        category: video.category?.title,
       })),
     };
 
