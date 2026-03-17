@@ -1,5 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
+import { Injectable } from '@nestjs/common';
 import { QueryPrescriptionDto } from './dto/query-prescription.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from 'prisma/generated/client';
@@ -137,7 +136,11 @@ export class PrescriptionService {
       },
     });
 
-    if (candidates.length === 0) return null;
+    if (candidates.length === 0)
+      return {
+        success: false,
+        message: 'No prescriptions found',
+      };
 
     // 1. Filter for incomplete ones and sort by watch_history.updated_at DESC (LIFO Stack)
     const startedIncomplete = candidates

@@ -16,14 +16,17 @@ export class OverviewService {
   async getActivities(query: PaginationQueryDto) {
     const { page, limit } = query;
     const skip = (page - 1) * limit;
-    const activities = await this.activityRepository.getActivities(skip, limit);
+    const { activities, count } = await this.activityRepository.getActivities(
+      limit,
+      skip,
+    );
     return {
       success: true,
       data: activities,
       meta_data: {
         page,
         limit,
-        total: await this.activityRepository.count(),
+        total: count,
       },
     };
   }

@@ -46,7 +46,12 @@ export class LibraryController {
   @ApiOperation({
     summary: 'Phase 1: Initialize video upload (Admin Only)',
     description:
-      'Step 1 of the multi-phase upload flow. Takes the filename and an optional thumbnail image (multipart). Returns a pre-signed S3/MinIO URL for direct client-side upload and a unique video ID. The video status will be set to UPLOADING.',
+      'Step 1 of the multi-phase upload flow. Takes the filename and an optional thumbnail image (multipart). Returns a pre-signed S3/MinIO URL for direct client-side upload and a unique video ID.\n\n' +
+      '**Manual Upload Steps:**\n' +
+      '1. Get `upload_url` from this response.\n' +
+      '2. Make a `PUT` request to `upload_url` with the video file binary in the body.\n' +
+      '3. Set `Content-Type` header to match the video type (e.g., `video/mp4`).\n' +
+      '4. After the upload to MinIO is finished, call `PATCH /admin/library/{video_id}/complete-upload` to finalize.',
   })
   @ApiResponse({
     status: 201,
@@ -212,7 +217,11 @@ export class LibraryController {
   @ApiOperation({
     summary: 'Initialize video re-upload (Admin Only)',
     description:
-      'Allows replacing existing video file. Returns new pre-signed URL. Status returns to UPLOADING until complete-upload is called again.',
+      'Allows replacing existing video file. Returns new pre-signed URL.\n\n' +
+      '**Steps:**\n' +
+      '1. Use the `upload_url` to `PUT` the new video file.\n' +
+      '2. Ensure `Content-Type` matches the file.\n' +
+      '3. Call `complete-upload` after the transfer is done.',
   })
   @ApiResponse({
     status: 200,
@@ -406,8 +415,8 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Soft delete video (Admin Only)',
-    description: 'Soft deletes video and associated chapters.',
+    summary: 'Delete video (Admin Only)',
+    description: 'Deletes video and associated chapters.',
   })
   @ApiResponse({
     status: 200,

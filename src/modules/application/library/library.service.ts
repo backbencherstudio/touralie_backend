@@ -134,20 +134,16 @@ export class LibraryService {
 
     const where: Prisma.FavoriteVideoWhereInput = {
       user_id: userId,
+      video: {
+        deleted_at: null,
+        status: 'PUBLISHED',
+      },
     };
 
     if (search) {
-      where.OR = [
-        {
-          video: {
-            title: { contains: search, mode: 'insensitive' },
-          },
-        },
-        {
-          video: {
-            description: { contains: search, mode: 'insensitive' },
-          },
-        },
+      where.video.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -238,20 +234,15 @@ export class LibraryService {
 
     const where: Prisma.WatchHistoryWhereInput = {
       user_id: userId,
+      video: {
+        deleted_at: null,
+      },
     };
 
     if (search) {
-      where.OR = [
-        {
-          video: {
-            title: { contains: search, mode: 'insensitive' },
-          },
-        },
-        {
-          video: {
-            description: { contains: search, mode: 'insensitive' },
-          },
-        },
+      where.video.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -278,6 +269,8 @@ export class LibraryService {
       where,
       select: {
         id: true,
+        is_completed: true,
+        last_played_position: true,
         video: {
           select: {
             id: true,
@@ -298,7 +291,7 @@ export class LibraryService {
       skip,
       take: limit,
       orderBy: {
-        created_at: 'desc',
+        updated_at: 'desc',
       },
     });
 
@@ -310,7 +303,8 @@ export class LibraryService {
       duration: video.video.duration,
       level: video.video.level,
       created_at: video.video.created_at,
-      is_favorite: true,
+      is_completed: video.is_completed,
+      last_played_position: video.last_played_position,
       thumbnail_url: video.video.thumbnail_url
         ? SojebStorage.url(video.video.thumbnail_url)
         : null,
@@ -388,6 +382,16 @@ export class LibraryService {
       if (watchHistory) {
         last_watch_position = watchHistory.last_played_position ?? 0;
         is_completed = watchHistory.is_completed;
+      } else {
+        // Create initial watch history record
+        await this.prisma.watchHistory.create({
+          data: {
+            video_id: id,
+            user_id: userId,
+            last_played_position: 0,
+            is_completed: false,
+          },
+        });
       }
     }
 

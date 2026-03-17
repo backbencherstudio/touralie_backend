@@ -15,15 +15,15 @@ export class ActivityRepository {
   }
 
   async getActivities(limit: number = 20, offset: number = 0) {
-    return await this.prisma.activity.findMany({
+    const activities = await this.prisma.activity.findMany({
       take: limit,
       skip: offset,
       orderBy: {
         created_at: 'desc',
       },
     });
-  }
-  async count() {
-    return await this.prisma.activity.count();
+    console.log(activities);
+    const count = await this.prisma.activity.count();
+    return { activities, count };
   }
 }
