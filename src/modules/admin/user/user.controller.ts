@@ -25,7 +25,7 @@ import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { QueryUserDto } from './dto/query-user.dto';
 
-@ApiBearerAuth()
+@ApiBearerAuth('admin_token')
 @ApiTags('User')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)

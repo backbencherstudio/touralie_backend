@@ -93,7 +93,7 @@ export class UserRepository {
           username: username,
           email: email,
           password: password,
-          type: 'su_admin',
+          type: 'admin',
         },
       });
       return user;

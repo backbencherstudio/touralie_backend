@@ -33,10 +33,10 @@ import { QueryLibraryDto } from './dto/query-library.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 
 @ApiTags('Library')
-@ApiBearerAuth()
+@ApiBearerAuth('admin_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
-@Controller('library')
+@Controller('admin/library')
 export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 

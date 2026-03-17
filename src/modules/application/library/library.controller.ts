@@ -27,7 +27,7 @@ import { Request } from 'express';
 import { UpdateWatchProgressDto } from './dto/update-watch-progress.dto';
 
 @ApiTags('Library')
-@ApiBearerAuth()
+@ApiBearerAuth('user_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.USER)
 @Controller('library')

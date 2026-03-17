@@ -8,8 +8,13 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guard/role/roles.guard';
 import { Roles } from 'src/common/guard/role/roles.decorator';
 import { Role } from 'src/common/guard/role/role.enum';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+@ApiBearerAuth('admin_token')
 @ApiTags('Overview')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)

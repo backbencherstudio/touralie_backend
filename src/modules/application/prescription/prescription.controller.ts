@@ -14,7 +14,7 @@ import { QueryPrescriptionDto } from './dto/query-prescription.dto';
 import { Request } from 'express';
 
 @ApiTags('Prescription')
-@ApiBearerAuth()
+@ApiBearerAuth('user_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.USER)
 @Controller('prescription')

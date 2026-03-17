@@ -8,7 +8,10 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Command({ name: 'seed', description: 'prisma db seed' })
 export class SeedCommand extends CommandRunner {
-  constructor(private readonly prisma: PrismaService, private readonly userRepository: UserRepository) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly userRepository: UserRepository,
+  ) {
     super();
   }
   async run(passedParam: string[]): Promise<void> {
@@ -22,20 +25,31 @@ export class SeedCommand extends CommandRunner {
 
       // begin transaaction
       await this.prisma.$transaction(async ($tx) => {
-        await this.roleSeed();
-        await this.permissionSeed();
+        // await this.roleSeed();
+        // await this.permissionSeed();
         await this.userSeed();
-        await this.permissionRoleSeed();
+        // await this.permissionRoleSeed();
       });
 
       console.log('Seeding done.');
     } catch (error) {
+      console.log(error);
       throw error;
     }
   }
 
   //---- user section ----
   async userSeed() {
+    const email = appConfig().defaultUser.system.email;
+    const existingUser = await this.userRepository.getUserByEmail(email);
+
+    if (existingUser) {
+      console.log(
+        `User with email ${email} already exists. Skipping creation.`,
+      );
+      return;
+    }
+
     // system admin, user id: 1
     const systemUser = await this.userRepository.createSuAdminUser({
       username: appConfig().defaultUser.system.username,
@@ -43,12 +57,12 @@ export class SeedCommand extends CommandRunner {
       password: appConfig().defaultUser.system.password,
     });
 
-    await this.prisma.roleUser.create({
-      data: {
-        user_id: systemUser.id,
-        role_id: '1',
-      },
-    });
+    // await this.prisma.roleUser.create({
+    //   data: {
+    //     user_id: systemUser.id,
+    //     role_id: '1',
+    //   },
+    // });
   }
 
   async permissionSeed() {

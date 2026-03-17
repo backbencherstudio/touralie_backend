@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class InitVideoUploadDto {
@@ -16,6 +17,7 @@ export class InitVideoUploadDto {
     required: false,
   })
   @IsNumber()
+  @Type(() => Number)
   @IsOptional()
   duration?: number;
 

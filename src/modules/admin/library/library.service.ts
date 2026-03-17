@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreateLibraryDto } from './dto/create-library.dto';
 import { UpdateLibraryDto } from './dto/update-library.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import appConfig from '../../../config/app.config';

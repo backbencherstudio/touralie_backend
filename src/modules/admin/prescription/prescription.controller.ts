@@ -25,7 +25,7 @@ import {
 import { PrescribedMembersQueryDto } from './dto/query-prescription.dto';
 
 @ApiTags('Prescription')
-@ApiBearerAuth()
+@ApiBearerAuth('admin_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 @Controller('admin/prescription')

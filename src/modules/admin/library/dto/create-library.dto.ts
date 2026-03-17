@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { IsString, IsEnum, IsOptional, IsNumber } from 'class-validator';
 import { Level } from 'prisma/generated/enums';
 
@@ -58,6 +59,7 @@ export class CreateLibraryDto {
     required: false,
   })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   duration?: number;
 

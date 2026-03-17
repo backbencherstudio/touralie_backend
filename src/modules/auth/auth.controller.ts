@@ -45,7 +45,9 @@ import {
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthGuard } from '@nestjs/passport';
 
-@ApiTags('auth')
+@ApiTags('Auth')
+@ApiBearerAuth('admin_token')
+@ApiBearerAuth('user_token')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 // external imports
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
@@ -76,11 +77,11 @@ async function bootstrap() {
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'user_token',
-    ) // Adds user_token as Bearer Auth
+    )
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'admin_token',
-    ) // Adds admin_token as Bearer Auth
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, options);
@@ -88,20 +89,77 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
-      responseInterceptor: (response) => {
-        // Check if the response is from the login endpoint
-        if (response.url.includes('/auth/login') && response.status === 200) {
-          const data = JSON.parse(response.data);
-          const userToken = data.authorization.access_token;
-          const adminToken = data.authorization.access_token;
 
-          // Automatically set the token based on user type (either 'user' or 'admin')
-          if (userToken && data.type === 'user') {
-            (window as any).ui.preauthorizeApiKey('user_token', userToken); // Set user_token
-          } else if (adminToken && data.type === 'admin') {
-            (window as any).ui.preauthorizeApiKey('admin_token', adminToken); // Set admin_token
+      responseInterceptor: function (response) {
+        console.log('Swagger Interceptor Fired! URL:', response.url);
+
+        try {
+          if (response.url && response.url.indexOf('/auth/login') !== -1) {
+            console.log('Login API detected! Status:', response.status);
+
+            if (response.status === 200 || response.status === 201) {
+              var data = response.data || response.body || response.obj;
+
+              if (typeof data === 'string') {
+                data = JSON.parse(data);
+              }
+
+              console.log('Login Response Data:', data);
+
+              var token =
+                data && data.authorization && data.authorization.access_token;
+              var type = data && data.type;
+
+              if (!token) {
+                console.log('Error: Token not found in the response!');
+                return response;
+              }
+
+              var key = type === 'admin' ? 'admin_token' : 'user_token';
+
+              var ui = (window as any).ui;
+
+              if (ui) {
+                var authObj = {};
+                authObj[key] = {
+                  name: key,
+                  schema: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                  },
+                  value: token,
+                };
+
+                ui.authActions.authorize(authObj);
+
+                try {
+                  var currentAuth = window.localStorage.getItem('authorized');
+                  var parsedAuth = currentAuth ? JSON.parse(currentAuth) : {};
+
+                  parsedAuth[key] = authObj[key];
+
+                  window.localStorage.setItem(
+                    'authorized',
+                    JSON.stringify(parsedAuth),
+                  );
+                  console.log('Token successfully persisted to localStorage!');
+                } catch (e) {
+                  console.error('Failed to save token to localStorage', e);
+                }
+
+                console.log(
+                  'Success: Swagger auto authorized with ' + key + '!',
+                );
+              } else {
+                console.log('Error: Swagger UI instance not found on window!');
+              }
+            }
           }
+        } catch (err) {
+          console.error('Swagger token auto set failed:', err);
         }
+
         return response;
       },
     },

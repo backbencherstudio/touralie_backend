@@ -10,7 +10,7 @@ import {
 import { MembershipService } from './membership.service';
 import { CreateMemberShipPlanDto } from './dto/create-membership.dto';
 import {
-  ApiBasicAuth,
+  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -23,7 +23,7 @@ import { Role } from 'src/common/guard/role/role.enum';
 import { MemberLeadsQueryDto } from './dto/query-membership.dto';
 
 @ApiTags('Membership')
-@ApiBasicAuth()
+@ApiBearerAuth('admin_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 @Controller('admin/membership')

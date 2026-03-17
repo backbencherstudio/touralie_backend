@@ -22,7 +22,9 @@
     "cmd": "cross-env PRISMA_ENV=1 ts-node src/cmd.ts",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:gen": "prisma generate"
+    "db:gen": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset"
   },
   "dependencies": {
     "@casl/ability": "6.7.3",
@@ -50,7 +52,7 @@
     "bullmq": "5.48.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
-    "cross-env": "7.0.3",
+    "cross-env": "^10.1.0",
     "date-fns": "4.1.0",
     "dayjs": "1.11.13",
     "helmet": "8.1.0",
