@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsDate,
@@ -35,7 +36,7 @@ export class RegisterUserDto {
   last_name?: string;
 
   @IsNotEmpty()
-  @IsString()
+  @IsEmail()
   @ApiProperty({
     example: 'john@example.com',
     description: 'Email address of the user',
@@ -46,7 +47,7 @@ export class RegisterUserDto {
   @MinLength(8, { message: 'Password should be minimum 8 characters' })
   @IsString()
   @ApiProperty({
-    example: 'password123',
+    example: '12345678',
     description: 'Password for the user account',
   })
   password: string;
@@ -79,6 +80,7 @@ export class RegisterUserDto {
   gender?: string;
 
   @IsOptional()
+  @Type(() => Date)
   @IsDate()
   @ApiProperty({
     example: '1998-05-20T00:00:00.000Z',
@@ -99,21 +101,21 @@ export class RegisterUserDto {
   })
   personalization?: string[];
 
-  @IsEmpty()
+  @IsOptional()
   @IsString()
   // @ApiProperty({
   //   example: 'user',
   //   description: 'Type of the user (e.g., user, admin)',
   //   required: false,
   // })
-  type?: string;
+  type?: string = 'user';
 }
 
 export class LoginDto {
   @IsNotEmpty()
   @IsEmail()
   @ApiProperty({
-    example: 'john@example.com',
+    example: 'admin@example.com',
     description: 'Email address of the user',
   })
   email: string;
@@ -122,7 +124,7 @@ export class LoginDto {
   @MinLength(8, { message: 'Password should be minimum 8 characters' })
   @IsString()
   @ApiProperty({
-    example: 'password123',
+    example: '12345678',
     description: 'Password for the user account',
   })
   password: string;

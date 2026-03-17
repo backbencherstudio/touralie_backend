@@ -12,7 +12,7 @@ import { MembershipService } from './membership.service';
 import { CreateMemberLeadsDto } from './dto/create-membership.dto';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import {
-  ApiBasicAuth,
+  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -23,7 +23,7 @@ import { Role } from 'src/common/guard/role/role.enum';
 import { Request } from 'express';
 
 @ApiTags('Membership')
-@ApiBasicAuth()
+@ApiBearerAuth('user_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.USER)
 @Controller('membership')

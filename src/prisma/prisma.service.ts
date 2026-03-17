@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import appConfig from '../config/app.config';
-import { PrismaClient } from 'prisma/generated/client';
+import { PrismaClient } from '../../prisma/generated/client';
 
 @Injectable()
 export class PrismaService
@@ -17,7 +17,7 @@ export class PrismaService
 
   constructor() {
     const connectionString = appConfig().database.url;
-    
+
     if (!connectionString) {
       throw new Error('DATABASE_URL is not defined in environment variables');
     }

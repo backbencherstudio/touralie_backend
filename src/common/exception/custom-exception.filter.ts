@@ -3,19 +3,40 @@ import {
   Catch,
   ArgumentsHost,
   HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 
-@Catch(HttpException)
+@Catch()
 export class CustomExceptionFilter implements ExceptionFilter {
-  catch(exception: HttpException, host: ArgumentsHost) {
-    const response = host.switchToHttp().getResponse();
-    const status = exception.getStatus();
+  catch(exception: unknown, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+
+    const isHttpException = exception instanceof HttpException;
+    const status = isHttpException
+      ? exception.getStatus()
+      : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (isDevelopment) {
+      console.error('🔥 [DEV ERROR LOG]:', exception);
+    }
+    let errorMessage: string | object = 'Internal server error';
+
+    if (isHttpException) {
+      errorMessage = exception.getResponse();
+    } else if (isDevelopment) {
+      errorMessage =
+        exception instanceof Error
+          ? exception.message
+          : 'Unknown Database/Server Error';
+    }
 
     // Return custom error response format
     response.status(status).json({
       success: false,
-      // message: exception.message || 'An error occurred',
-      message: exception.getResponse(),
+      message: errorMessage,
     });
   }
 }

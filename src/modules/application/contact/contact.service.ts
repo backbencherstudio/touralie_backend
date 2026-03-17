@@ -2,9 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
 
+import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+
 @Injectable()
 export class ContactService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activityRepository: ActivityRepository,
+  ) {}
 
   async create(createContactDto: CreateContactDto) {
     try {
@@ -28,6 +33,11 @@ export class ContactService {
       await this.prisma.contact.create({
         data: data,
       });
+
+      await this.activityRepository.createActivity(
+        'New Contact Message',
+        `A new contact message has been submitted by "${createContactDto.first_name} ${createContactDto.last_name || ''}" (${createContactDto.email}).`,
+      );
 
       return {
         success: true,

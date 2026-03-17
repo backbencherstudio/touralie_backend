@@ -1,26 +1,76 @@
 import { Injectable } from '@nestjs/common';
-import { CreateOverviewDto } from './dto/create-overview.dto';
-import { UpdateOverviewDto } from './dto/update-overview.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import {
+  PaginationQueryDto,
+  UserStatsQueryDto,
+} from './dto/query-overview.dto';
+import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
 
 @Injectable()
 export class OverviewService {
-  create(createOverviewDto: CreateOverviewDto) {
-    return 'This action adds a new overview';
+  constructor(
+    private prisma: PrismaService,
+    private activityRepository: ActivityRepository,
+  ) {}
+
+  async getActivities(query: PaginationQueryDto) {
+    const { page, limit } = query;
+    const skip = (page - 1) * limit;
+    const { activities, count } = await this.activityRepository.getActivities(
+      limit,
+      skip,
+    );
+    return {
+      success: true,
+      data: activities,
+      meta_data: {
+        page,
+        limit,
+        total: count,
+      },
+    };
   }
 
-  findAll() {
-    return `This action returns all overview`;
-  }
+  async getUserStats(query: UserStatsQueryDto) {
+    const year = query.year ? parseInt(query.year) : new Date().getFullYear();
 
-  findOne(id: number) {
-    return `This action returns a #${id} overview`;
-  }
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  update(id: number, updateOverviewDto: UpdateOverviewDto) {
-    return `This action updates a #${id} overview`;
-  }
+    const stats = await Promise.all(
+      months.map(async (month) => {
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-  remove(id: number) {
-    return `This action removes a #${id} overview`;
+        const totalUsers = await this.prisma.user.count({
+          where: {
+            created_at: {
+              lte: endDate,
+            },
+            deleted_at: null,
+          },
+        });
+
+        const activeUsers = await this.prisma.dailyCheckIn.groupBy({
+          by: ['user_id'],
+          where: {
+            created_at: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+        });
+
+        return {
+          month: startDate.toLocaleString('default', { month: 'short' }),
+          totalUsers,
+          activeUsers: activeUsers.length,
+        };
+      }),
+    );
+
+    return {
+      success: true,
+      data: stats,
+    };
   }
 }

@@ -7,7 +7,7 @@ import {
   IsString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { PlanPeriod } from 'prisma/generated/enums';
 
 export class CreateMembershipDto {}
@@ -33,7 +33,7 @@ export class CreateMemberShipPlanDto {
     description: 'Price of the membership plan',
     example: 199.99,
   })
-  @Transform((value) => (value ? Number(value) : undefined))
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   price: number;

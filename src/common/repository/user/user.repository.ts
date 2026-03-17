@@ -4,7 +4,11 @@ import * as QRCode from 'qrcode';
 import appConfig from '../../../config/app.config';
 import { ArrayHelper } from '../../helper/array.helper';
 import { Role } from '../../guard/role/role.enum';
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
@@ -89,7 +93,7 @@ export class UserRepository {
           username: username,
           email: email,
           password: password,
-          type: 'su_admin',
+          type: 'admin',
         },
       });
       return user;
@@ -312,99 +316,106 @@ export class UserRepository {
       name,
       email,
       password,
+      weight,
+      height,
+      gender,
+      date_of_birth,
+      personalization,
       role_id = null,
       type = 'user',
     }: {
       name?: string;
       email?: string;
       password?: string;
+      weight?: number;
+      height?: number;
+      gender?: string;
+      date_of_birth?: Date;
+      personalization?: string[];
       role_id?: string;
       type?: string;
     },
   ) {
-    try {
-      const data = {};
-      if (name) {
-        data['name'] = name;
-      }
-      if (email) {
-        // Check if email already exist
-        const userEmailExist = await this.exist({
-          field: 'email',
-          value: String(email),
-        });
-
-        if (userEmailExist) {
-          return {
-            success: false,
-            message: 'Email already exist',
-          };
-        }
-        data['email'] = email;
-      }
-      if (password) {
-        data['password'] = await bcrypt.hash(
-          password,
-          appConfig().security.salt,
-        );
-      }
-
-      if (ArrayHelper.inArray(type, Object.values(Role))) {
-        data['type'] = type;
-      } else {
-        return {
-          success: false,
-          message: 'Invalid user type',
-        };
-      }
-
-      const existUser = await this.prisma.user.findFirst({
-        where: {
-          id: user_id,
-        },
+    const data = {};
+    if (name) {
+      data['name'] = name;
+    }
+    if (email) {
+      // Check if email already exist
+      const userEmailExist = await this.exist({
+        field: 'email',
+        value: String(email),
       });
 
-      if (!existUser) {
-        return {
-          success: false,
-          message: 'User not found',
-        };
+      if (userEmailExist) {
+        throw new BadRequestException('Email already exist');
       }
+      data['email'] = email;
+    }
+    if (password) {
+      data['password'] = await bcrypt.hash(password, appConfig().security.salt);
+    }
 
-      const user = await this.prisma.user.update({
-        where: {
-          id: user_id,
-        },
-        data: {
-          ...data,
-        },
-      });
-
-      if (user) {
-        if (role_id) {
-          // attach role
-          await this.attachRole({
-            user_id: user.id,
-            role_id: role_id,
-          });
-        }
-
-        return {
-          success: true,
-          message: 'User updated successfully',
-          data: user,
-        };
-      } else {
-        return {
-          success: false,
-          message: 'User update failed',
-        };
-      }
-    } catch (error) {
+    if (ArrayHelper.inArray(type, Object.values(Role))) {
+      data['type'] = type;
+    } else {
       return {
         success: false,
-        message: error.message,
+        message: 'Invalid user type',
       };
+    }
+
+    const existUser = await this.prisma.user.findFirst({
+      where: {
+        id: user_id,
+      },
+    });
+
+    if (weight) {
+      data['weight'] = weight;
+    }
+    if (height) {
+      data['height'] = height;
+    }
+    if (gender) {
+      data['gender'] = gender;
+    }
+    if (date_of_birth) {
+      data['date_of_birth'] = date_of_birth;
+    }
+    if (personalization) {
+      data['personalization'] = personalization;
+    }
+
+    if (!existUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const user = await this.prisma.user.update({
+      where: {
+        id: user_id,
+      },
+      data: {
+        ...data,
+      },
+    });
+
+    if (user) {
+      if (role_id) {
+        // attach role
+        await this.attachRole({
+          user_id: user.id,
+          role_id: role_id,
+        });
+      }
+
+      return {
+        success: true,
+        message: 'User updated successfully',
+        // data: user,
+      };
+    } else {
+      throw new BadRequestException('User update failed');
     }
   }
 
@@ -414,35 +425,25 @@ export class UserRepository {
    * @returns
    */
   async deleteUser(user_id: string) {
-    try {
-      // check if user exist
-      const existUser = await this.prisma.user.findFirst({
-        where: {
-          id: user_id,
-        },
-      });
-      if (!existUser) {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
-
-      await this.prisma.user.delete({
-        where: {
-          id: user_id,
-        },
-      });
-      return {
-        success: true,
-        message: 'User deleted successfully',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+    // check if user exist
+    const existUser = await this.prisma.user.findFirst({
+      where: {
+        id: user_id,
+      },
+    });
+    if (!existUser) {
+      throw new NotFoundException('User not found');
     }
+
+    await this.prisma.user.delete({
+      where: {
+        id: user_id,
+      },
+    });
+    return {
+      success: true,
+      message: 'User deleted successfully',
+    };
   }
 
   // change password

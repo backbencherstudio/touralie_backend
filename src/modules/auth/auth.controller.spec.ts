@@ -154,7 +154,7 @@ describe('AuthController', () => {
   it('should change password', async () => {
     const result = await controller.changePassword(
       { user: { userId: 1 } } as any,
-      { email: 'john@example.com', old_password: 'oldpass', new_password: 'newpass' },
+      { email: 'john@example.com', old_password: 'oldpass', new_password: 'newpass' } as any,
     );
     expect(result.success).toBe(true);
   });
@@ -177,7 +177,7 @@ describe('AuthController', () => {
 
   it('should generate 2FA secret', async () => {
     const result = await controller.generate2FASecret({ user: { userId: 1 } } as any);
-    expect(result.data.qrCode).toBe('base64');
+    expect((result as any).data.qrCode).toBe('base64');
   });
 
   it('should verify 2FA token', async () => {

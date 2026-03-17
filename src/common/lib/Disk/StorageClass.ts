@@ -39,8 +39,8 @@ export class StorageClass {
    * @param value
    * @returns
    */
-  public async put(key: string, value: any) {
-    return await this.adapter.put(key, value);
+  public async put(key: string, value: any, contentType?: string) {
+    return await this.adapter.put(key, value, contentType);
   }
 
   /**
@@ -50,5 +50,29 @@ export class StorageClass {
    */
   public async delete(key: string) {
     return await this.adapter.delete(key);
+  }
+
+  /**
+   * get signed url
+   * @param key
+   * @param expires
+   * @returns
+   */
+  public async getSignedUrl(
+    key: string,
+    expires?: number,
+    contentType?: string,
+  ) {
+    return await this.adapter.getSignedUrl(key, expires, contentType);
+  }
+
+  /**
+   * move file
+   * @param from
+   * @param to
+   * @returns
+   */
+  public async move(from: string, to: string) {
+    return await this.adapter.move(from, to);
   }
 }

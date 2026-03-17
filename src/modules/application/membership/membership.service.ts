@@ -2,9 +2,14 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateMemberLeadsDto } from './dto/create-membership.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
+import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+
 @Injectable()
 export class MembershipService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activityRepository: ActivityRepository,
+  ) {}
   async createMemberLeads(
     createMemberLeadsDto: CreateMemberLeadsDto,
     user_id: string,
@@ -32,7 +37,17 @@ export class MembershipService {
           },
         },
       },
+      include: {
+        member: true,
+        plan: true,
+      },
     });
+
+    await this.activityRepository.createActivity(
+      'New Member Lead Created',
+      `A new interest lead has been created by "${memberLead.member.name}" for plan "${memberLead.plan.title}".`,
+    );
+
     return {
       success: true,
       message: 'Member Lead Created Successfully',

@@ -4,9 +4,14 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { MemberLeadsQueryDto } from './dto/query-membership.dto';
 import { Prisma } from 'prisma/generated/client';
 
+import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+
 @Injectable()
 export class MembershipService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activityRepository: ActivityRepository,
+  ) {}
   async createMemberShipPlan(CreateMemberShipPlanDto: CreateMemberShipPlanDto) {
     const plan = await this.prisma.plan.create({
       data: CreateMemberShipPlanDto,
@@ -151,11 +156,23 @@ export class MembershipService {
   }
 
   async removeMemberShipPlan(id: string) {
+    const plan = await this.prisma.plan.findUnique({
+      where: { id },
+    });
+
     await this.prisma.plan.delete({
       where: {
         id: id,
       },
     });
+
+    if (plan) {
+      await this.activityRepository.createActivity(
+        'Membership Plan Deleted',
+        `Membership plan "${plan.title}" has been deleted.`,
+      );
+    }
+
     return {
       success: true,
       message: 'MemberShip Plan Delete Successfully',

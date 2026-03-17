@@ -85,13 +85,19 @@ export class S3Adapter implements IStorage {
   async put(
     key: string,
     value: Buffer | Uint8Array | string,
+    contentType?: string,
   ): Promise<AWS.S3.ManagedUpload.SendData> {
     try {
-      const params = {
+      const params: any = {
         Bucket: this._config.connection.awsBucket,
         Key: key,
         Body: value,
       };
+
+      if (contentType) {
+        params.ContentType = contentType;
+      }
+
       const upload = await this.s3.upload(params).promise();
       return upload;
     } catch (error) {
@@ -112,6 +118,67 @@ export class S3Adapter implements IStorage {
       if ((error as AWS.AWSError).code === 'NotFound') {
         return false;
       }
+      throw error;
+    }
+  }
+
+  /**
+   * get signed url
+   * @param key
+   * @param expires
+   * @returns
+   */
+  async getSignedUrl(
+    key: string,
+    expires: number = 3600,
+    contentType?: string,
+  ): Promise<string> {
+    try {
+      const params: any = {
+        Bucket: this._config.connection.awsBucket,
+        Key: key,
+        Expires: expires,
+      };
+
+      if (contentType) {
+        params.ContentType = contentType;
+      }
+
+      const url = await this.s3.getSignedUrlPromise('putObject', params);
+      return url;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * move file
+   * @param from
+   * @param to
+   * @returns
+   */
+  async move(from: string, to: string): Promise<any> {
+    try {
+      const bucket = this._config.connection.awsBucket;
+      // Copy the object
+      await this.s3
+        .copyObject({
+          Bucket: bucket,
+          CopySource: `${bucket}/${from}`,
+          Key: to,
+        })
+        .promise();
+
+      // Delete the original
+      await this.s3
+        .deleteObject({
+          Bucket: bucket,
+          Key: from,
+        })
+        .promise();
+
+      return true;
+    } catch (error) {
       throw error;
     }
   }
