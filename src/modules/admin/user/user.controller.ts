@@ -49,50 +49,50 @@ export class UserController {
   }
 
   @ApiOperation({
-    summary: 'Get all members (Admin only)',
+    summary: 'Retrieve List of All Users (Admin Only)',
     description: `
-    Get all users
-    
-    Query Parameters:
-    - search: Search by name, email, phone number, address
-    - status: Filter by status (pending, active, inactive)
-    - type: Filter by gender (male, female)
-    - page: Page number
-    - limit: Number of items per page
-    - start_date: Start date
-    - end_date: End date
-    `,
+Fetch a paginated list of all users registered in the system. 
+Allows filtering by status, type (gender), and date range.
+The result is sorted by registration date (descending) by default.
+
+**Query Filters:**
+- **search**: Partial match on Name, Email, Phone, or Address.
+- **status**: Filter by account status (e.g., PENDING, ACTIVE, BANNED).
+- **type**: Filter by gender (e.g., MALE, FEMALE).
+- **start_date / end_date**: Filter by creation date.
+`,
   })
   @ApiResponse({
     status: 200,
-    description: 'Get all users',
+    description: 'A list of users with pagination metadata.',
     schema: {
       example: {
         success: true,
         message: 'Users fetched successfully',
         data: [
           {
-            id: 'uuid',
+            id: 'cmm632yhc0003kg9wfbdqce74',
             name: 'John Doe',
-            email: 'email',
+            email: 'john@example.com',
             weight: 70,
             height: 175,
             gender: 'male',
             type: 'user',
+            status: 1,
             date_of_birth: '1998-05-20T00:00:00.000Z',
-            created_at: '2026-03-16T00:00:00.000Z',
+            created_at: '2026-03-16T10:00:00.000Z',
           },
         ],
         meta_data: {
           page: 1,
           limit: 10,
-          total: 1,
-          search: 'search',
+          total: 150,
+          search: '',
           filter: {
-            status: 'pending',
-            type: 'male',
-            start_date: '2026-01-01',
-            end_date: '2026-12-31',
+            status: 'ACTIVE',
+            type: 'ALL',
+            start_date: null,
+            end_date: null,
           },
         },
       },
@@ -136,7 +136,17 @@ export class UserController {
     }
   }
 
-  @ApiResponse({ description: 'Get a user by id' })
+  @ApiOperation({
+    summary: 'Get Detailed User Profile (Admin Only)',
+    description: `
+Fetch all available information for a specific user by their Unique ID.
+Includes profile details, settings, and activity summary.
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Detailed user profile data.',
+  })
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {
@@ -151,21 +161,19 @@ export class UserController {
   }
 
   @ApiOperation({
-    summary: 'Ban or unban a user',
+    summary: 'Ban or Unban User Account (Admin Only)',
     description: `
-    Ban or unban a user
-    
-    Path Parameters:
-    - id: User ID
-    `,
+Toggles the status of a user between ACTIVE and BANNED. 
+If a user is banned, they will no longer be able to log in or access protected resources.
+`,
   })
   @ApiResponse({
     status: 200,
-    description: 'Ban or unban a user',
+    description: 'Account status updated successfully.',
     schema: {
       example: {
         success: true,
-        message: 'User banned or unbanned successfully',
+        message: 'User banned successfully',
       },
     },
   })
@@ -176,26 +184,15 @@ export class UserController {
   }
 
   @ApiOperation({
-    summary: 'Update a user',
+    summary: 'Update User Information (Admin Only)',
     description: `
-    Update a user
-    
-    Path Parameters:
-    - id: User ID
-    
-    Body Parameters:
-    - name: Name of the user
-    - email: Email address of the user
-    - weight: Weight of the user in kilograms
-    - height: Height of the user in centimeters
-    - gender: Gender of the user
-    - date_of_birth: Date of birth of the user
-    - personalization: Personalization preferences for the user (e.g., [fitness, fat_loss, mobility] goals)
-    `,
+Allows an administrator to modify any user's profile details.
+Provide only the fields that need to be updated.
+`,
   })
   @ApiResponse({
     status: 200,
-    description: 'Update a user',
+    description: 'User details updated successfully.',
     schema: {
       example: {
         success: true,
@@ -213,17 +210,15 @@ export class UserController {
   }
 
   @ApiOperation({
-    summary: 'Delete a user',
+    summary: 'Hard Delete User (Admin Only)',
     description: `
-    Delete a user
-    
-    Path Parameters:
-    - id: User ID
-    `,
+Permanently removes a user account and all associated data from the system.
+**Warning:** This action is irreversible.
+`,
   })
   @ApiResponse({
     status: 200,
-    description: 'Delete a user',
+    description: 'User and associated data deleted permanently.',
     schema: {
       example: {
         success: true,

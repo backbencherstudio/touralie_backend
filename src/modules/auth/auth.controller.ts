@@ -56,32 +56,39 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({
-    summary: 'Get user details',
+    summary: 'Get current user details',
     description: `
-Get user details.
+Retrieves the profile information of the currently authenticated user.
+The request must include a valid Bearer Token (JWT) in the Authorization header.
 
-Required fields:
-- none
+**Available Roles:**
+- user
+- admin
+
+**Response Data includes:**
+- ID, name, email
+- Profile details (avatar, address, phone)
+- Account details (type, gender, DOB)
 `,
   })
   @ApiResponse({
     status: 200,
-    description: 'User details fetched successfully',
+    description: 'Current user profile retrieved successfully.',
     schema: {
       example: {
         success: true,
         message: 'User details fetched successfully',
         data: {
           id: 'cmm632yhc0003kg9wfbdqce74',
-          name: 'name',
-          email: 'email',
-          avatar: 'avatar',
-          address: 'address',
-          phone_number: 'phone_number',
-          type: 'type',
-          gender: 'gender',
+          name: 'John Doe',
+          email: 'john@example.com',
+          avatar: 'https://example.com/avatar.jpg',
+          address: '123 Main St, New York, NY',
+          phone_number: '+1 234 567 8900',
+          type: 'user',
+          gender: 'male',
           date_of_birth: '1998-05-20T00:00:00.000Z',
-          created_at: '2022-01-01T00:00:00.000Z',
+          created_at: '2026-03-16T10:00:00.000Z',
         },
       },
     },
@@ -98,26 +105,28 @@ Required fields:
   }
 
   @ApiOperation({
-    summary: 'Register a new user',
+    summary: 'Register a new user account',
     description: `
-Creates a new user account.
+Creates a new user account in the system. Upon successful registration, a verification code (OTP) is sent to the provided email address.
 
-Required fields:
-- name
-- email
-- password
+**Registration Flow:**
+1. Submit this form with required details.
+2. Receive OTP in email.
+3. Verify email using the \`/auth/verify-email\` endpoint.
 
-Optional fields:
-- weight
-- height
-- gender
-- date_of_birth
-- personalization
+**Required fields:**
+- **name**: Full name
+- **email**: Unique email address
+- **password**: Minimum 8 characters
+
+**Optional fields:**
+- **weight**, **height**, **gender**, **date_of_birth**
+- **personalization**: Array of strings (e.g., goals)
 `,
   })
   @ApiResponse({
     status: 201,
-    description: 'User registered successfully',
+    description: 'User registered successfully. Verification email sent.',
     schema: {
       example: {
         success: true,
@@ -184,32 +193,36 @@ Optional fields:
 
   // login user
   @ApiOperation({
-    summary: 'Login user',
+    summary: 'User Login (Email & Password)',
     description: `
-Login user.
+Authenticates a user and returns access and refresh tokens.
 
-Required fields:
-- email
-- password
+**Authentication:**
+- Uses Local Strategy (email/password).
+- On success, returns a JWT \`access_token\` and a \`refresh_token\`.
+- The \`refresh_token\` is also set in a secure, httpOnly cookie.
+
+**Token Usage:**
+- Use \`access_token\` in the Authorization header as \`Bearer <token>\` for protected routes.
 `,
   })
   @ApiBody({
-    description: 'Request body for login',
+    description: 'Login credentials',
     type: LoginDto,
   })
   @ApiResponse({
     status: 200,
-    description: 'User logged in successfully',
+    description: 'Login successful. Tokens generated.',
     schema: {
       example: {
         success: true,
         message: 'Logged in successfully',
         authorization: {
           type: 'bearer',
-          access_token: 'access_token',
-          refresh_token: 'refresh_token',
+          access_token: 'eyJhbGciOiJIUzI1Ni...',
+          refresh_token: 'def456...',
         },
-        type: 'user or admin',
+        type: 'user',
       },
     },
   })

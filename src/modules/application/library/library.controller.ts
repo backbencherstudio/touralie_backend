@@ -35,49 +35,48 @@ export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
   @ApiOperation({
-    summary: 'Get all videos (Personalized) (User Only)',
-    description:
-      'Returns a list of published videos. If the user has personalization tags set, matching videos will appear first (Best Match).',
+    summary: 'Browse Video Library (Personalized)',
+    description: `
+Fetch a paginated list of published videos. 
+If the authenticated user has personalization goals (e.g., "fat_loss") set in their profile, videos matching those tags will be prioritized in the "Best Match" section.
+
+**Features:**
+- Pagination support
+- Category filtering
+- Date range filtering
+- Search by title or description
+- Personalization-based sorting
+`,
   })
   @ApiResponse({
     status: 200,
+    description: 'A list of videos tailored to the user.',
     schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Videos found successfully' },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              title: { type: 'string' },
-              thumbnail_url: { type: 'string' },
-              category: { type: 'string' },
-              chapters_count: { type: 'number' },
-              created_at: { type: 'string' },
-              duration: { type: 'number' },
-              level: { type: 'string' },
-              is_favorite: { type: 'boolean' },
-            },
+      example: {
+        success: true,
+        message: 'Videos found successfully',
+        data: [
+          {
+            id: 'cmm632yhc0003kg9wfbdqce74',
+            title: 'Strength Training 101',
+            thumbnail_url: 'https://example.com/thumb.jpg',
+            category: 'Fitness',
+            chapters_count: 5,
+            created_at: '2026-03-16T10:00:00.000Z',
+            duration: 1200,
+            level: 'BEGINNER',
+            is_favorite: true,
           },
-        },
+        ],
         meta_data: {
-          type: 'object',
-          properties: {
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            total: { type: 'number' },
-            search: { type: 'string' },
-            filter: {
-              type: 'object',
-              properties: {
-                category_id: { type: 'string' },
-                start_date: { type: 'string' },
-                end_date: { type: 'string' },
-              },
-            },
+          page: 1,
+          limit: 10,
+          total: 50,
+          search: '',
+          filter: {
+            category_id: null,
+            start_date: null,
+            end_date: null,
           },
         },
       },
@@ -90,26 +89,26 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Get all categories (User Only)',
-    description: 'Returns a list of all categories.',
+    summary: 'Get All Available Categories',
+    description: 'Retrieves a list of all video categories used in the library for filtering purposes.',
   })
   @ApiResponse({
     status: 200,
+    description: 'List of categories.',
     schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Categories found successfully' },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              title: { type: 'string' },
-            },
+      example: {
+        success: true,
+        message: 'Categories found successfully',
+        data: [
+          {
+            id: 'cat_123',
+            title: 'Strength',
           },
-        },
+          {
+            id: 'cat_456',
+            title: 'Mobility',
+          },
+        ],
       },
     },
   })
@@ -120,55 +119,12 @@ export class LibraryController {
 
   @Get('favorites')
   @ApiOperation({
-    summary: 'Get all favorite videos (User Only)',
-    description: 'Returns a list of all favorite videos.',
+    summary: 'Get My Favorite Videos',
+    description: 'Returns a paginated list of videos that the user has marked as favorite.',
   })
   @ApiResponse({
     status: 200,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: {
-          type: 'string',
-          example: 'Favorite videos found successfully',
-        },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              title: { type: 'string' },
-              thumbnail_url: { type: 'string' },
-              category: { type: 'string' },
-              chapters_count: { type: 'number' },
-              created_at: { type: 'string' },
-              duration: { type: 'number' },
-              level: { type: 'string' },
-              is_favorite: { type: 'boolean' },
-            },
-          },
-        },
-        meta_data: {
-          type: 'object',
-          properties: {
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            total: { type: 'number' },
-            search: { type: 'string' },
-            filter: {
-              type: 'object',
-              properties: {
-                category_id: { type: 'string' },
-                start_date: { type: 'string' },
-                end_date: { type: 'string' },
-              },
-            },
-          },
-        },
-      },
-    },
+    description: 'List of favorite videos.',
   })
   findAllFavoriteVideos(
     @Req() req: Request,
@@ -180,55 +136,18 @@ export class LibraryController {
 
   @Get('watch-history')
   @ApiOperation({
-    summary: 'Get all watch history (User Only)',
-    description: 'Returns a list of all watch history.',
+    summary: 'Get My Watch History',
+    description: `
+Returns a list of videos the user has previously watched or started. 
+Includes progress details like last played position.
+
+**Filtering:**
+- Use \`watch_status\` to filter by COMPLETED or IN_PROGRESS.
+`,
   })
   @ApiResponse({
     status: 200,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: {
-          type: 'string',
-          example: 'Watch history found successfully',
-        },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              title: { type: 'string' },
-              thumbnail_url: { type: 'string' },
-              category: { type: 'string' },
-              chapters_count: { type: 'number' },
-              created_at: { type: 'string' },
-              duration: { type: 'number' },
-              level: { type: 'string' },
-              is_favorite: { type: 'boolean' },
-            },
-          },
-        },
-        meta_data: {
-          type: 'object',
-          properties: {
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            total: { type: 'number' },
-            search: { type: 'string' },
-            filter: {
-              type: 'object',
-              properties: {
-                category_id: { type: 'string' },
-                start_date: { type: 'string' },
-                end_date: { type: 'string' },
-              },
-            },
-          },
-        },
-      },
-    },
+    description: 'User watch history.',
   })
   findAllWatchHistory(
     @Req() req: Request,
@@ -239,45 +158,15 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Get single video by ID (User Only)',
-    description: 'Returns full video details including chapters.',
+    summary: 'Get Video Details & Chapters',
+    description: `
+Fetch comprehensive details for a single video, including its chapters and the user's current watch progress.
+Use this before launching the video player.
+`,
   })
   @ApiResponse({
     status: 200,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Video found successfully' },
-        data: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            title: { type: 'string' },
-            description: { type: 'string' },
-            url: { type: 'string' },
-            thumbnail_url: { type: 'string' },
-            is_favorite: { type: 'boolean' },
-            last_watch_position: { type: 'number' },
-            is_completed: { type: 'boolean' },
-            category: { type: 'string' },
-            video_chapters: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  title: { type: 'string' },
-                  start_time: { type: 'string' },
-                  end_time: { type: 'string' },
-                  thumbnail_url: { type: 'string' },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+    description: 'Complete video object with chapters.',
   })
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: Request) {
@@ -286,20 +175,15 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Favorite a video (User Only)',
-    description: `Adds a video to the user's favorites. If the video is already favorited, it will be unfavorited.
-    
-    - video "id" is required`,
+    summary: 'Toggle Favorite Status',
+    description: `
+Marks a video as favorite or removes it from favorites if already present.
+Returns the new status.
+`,
   })
   @ApiResponse({
     status: 200,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Video favorited successfully' },
-      },
-    },
+    description: 'Favorite status updated.',
   })
   @Patch(':id/favorite')
   favorite(@Param('id') id: string, @Req() req: Request) {
@@ -308,22 +192,19 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Update video watch progress (User Only)',
-    description:
-      'Updates the last played position and completion status of a video.',
+    summary: 'Update Playback Progress',
+    description: `
+Saves the user's current playback position in a video. 
+Call this periodically during playback to ensure progress is saved.
+
+**Fields:**
+- **last_played_position**: Time in seconds.
+- **is_completed**: Boolean flag.
+`,
   })
   @ApiResponse({
     status: 200,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: {
-          type: 'string',
-          example: 'Watch progress updated successfully',
-        },
-      },
-    },
+    description: 'Progress saved successfully.',
   })
   @Patch(':id/progress')
   updateProgress(

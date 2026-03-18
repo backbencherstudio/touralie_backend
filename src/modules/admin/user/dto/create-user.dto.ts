@@ -11,16 +11,30 @@ import {
   MinLength,
 } from 'class-validator';
 
+export enum Gender {
+  MALE = 'male',
+  FEMALE = 'female',
+  OTHER = 'other',
+}
+
+export enum UserType {
+  USER = 'user',
+  ADMIN = 'admin',
+}
+
 export class CreateUserDto {
   @IsNotEmpty()
-  @ApiProperty({ example: 'John Doe', description: 'Full name of the user' })
+  @ApiProperty({
+    example: 'John Doe',
+    description: 'Full name of the user',
+  })
   name: string;
 
   @IsNotEmpty()
   @IsEmail()
   @ApiProperty({
     example: 'john@example.com',
-    description: 'Email address of the user',
+    description: 'Unique email address of the user',
   })
   email: string;
 
@@ -29,7 +43,7 @@ export class CreateUserDto {
   @IsString()
   @ApiProperty({
     example: 'password123',
-    description: 'Password for the user account',
+    description: 'Password for the user account (Min 8 characters)',
   })
   password: string;
 
@@ -37,7 +51,7 @@ export class CreateUserDto {
   @IsNumber()
   @ApiProperty({
     example: 70,
-    description: 'Weight of the user in kilograms',
+    description: 'Weight of the user in kilograms (kg)',
     required: false,
   })
   weight?: number;
@@ -46,7 +60,7 @@ export class CreateUserDto {
   @IsNumber()
   @ApiProperty({
     example: 175,
-    description: 'Height of the user in centimeters',
+    description: 'Height of the user in centimeters (cm)',
     required: false,
   })
   height?: number;
@@ -54,7 +68,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   @ApiProperty({
-    example: 'male',
+    enum: Gender,
+    example: Gender.MALE,
     description: 'Gender of the user',
     required: false,
   })
@@ -74,19 +89,20 @@ export class CreateUserDto {
   @IsString({ each: true })
   @ApiProperty({
     example: ['strength', 'fat_loss', 'mobility'],
-    description:
-      'Personalization preferences for the user (e.g., fitness goals)',
+    description: 'Personalization preferences or fitness goals',
     required: false,
     type: [String],
   })
   personalization?: string[];
 
-  @IsEmpty()
+  @IsOptional()
   @IsString()
   @ApiProperty({
-    example: 'user',
-    description: 'Type of the user (e.g., user, admin)',
+    enum: UserType,
+    example: UserType.USER,
+    description: 'Type of the user (user or admin)',
     required: false,
+    default: UserType.USER,
   })
-  type?: string;
+  type?: string = 'user';
 }

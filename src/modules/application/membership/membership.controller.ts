@@ -31,16 +31,18 @@ export class MembershipController {
   constructor(private readonly membershipService: MembershipService) {}
 
   @ApiOperation({
-    summary: 'Create a new membership lead (User Only)',
-    description: `This endpoint allows users to create a new membership lead, 
-Returns a new membership lead.
+    summary: 'Submit Membership Interest (User Only)',
+    description: `
+Registers the user's interest in a specific membership plan. 
+This creates a "lead" that administrators can review to follow up with the user.
 
-Plan ID param is required.
+**Path Parameters:**
+- **plan-id**: The Unique ID of the membership plan the user is interested in.
 `,
   })
   @ApiResponse({
     status: 200,
-    description: 'Member Lead Created Successfully',
+    description: 'Membership interest submitted successfully.',
     schema: {
       example: {
         success: true,
@@ -66,14 +68,20 @@ Plan ID param is required.
   }
 
   @ApiOperation({
-    summary: 'Get all membership plans (User Only)',
-    description: `This endpoint allows users to retrieve a list of all membership plans, 
-Returns a list of all membership plans.
+    summary: 'View Available Membership Plans (User Only)',
+    description: `
+Retrieves a list of all active membership plans available for purchase.
+Users can browse these plans before submitting their interest.
+
+**Response Data includes:**
+- Plan title and description
+- Price and billing period (e.g., WEEK, MONTH, YEAR)
+- List of features and badge (e.g., Gold, Silver)
 `,
   })
   @ApiResponse({
     status: 200,
-    description: 'MemberShip Plans Fetched Successfully',
+    description: 'List of available membership plans.',
     schema: {
       example: {
         success: true,
@@ -81,12 +89,12 @@ Returns a list of all membership plans.
         data: [
           {
             id: 'cmm632yhc0003kg9wfbdqce74',
-            title: 'title',
-            price: '100.00',
+            title: 'Premium Plan',
+            price: 199.99,
             badge: 'Gold',
-            period: 'WEEK',
-            features: ['feature1', 'feature2'],
-            description: 'description',
+            period: 'MONTH',
+            features: ['Priority Support', 'Exclusive Content'],
+            description: 'Best for professional users.',
           },
         ],
       },
