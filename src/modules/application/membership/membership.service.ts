@@ -3,12 +3,14 @@ import { CreateMemberLeadsDto } from './dto/create-membership.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
 
 @Injectable()
 export class MembershipService {
   constructor(
     private prisma: PrismaService,
     private activityRepository: ActivityRepository,
+    private notificationRepository: NotificationRepository,
   ) {}
   async createMemberLeads(
     createMemberLeadsDto: CreateMemberLeadsDto,
@@ -47,6 +49,21 @@ export class MembershipService {
       'New Member Lead Created',
       `A new interest lead has been created by "${memberLead.member.name}" for plan "${memberLead.plan.title}".`,
     );
+
+    // Notify Admins
+    const admins = await this.prisma.user.findMany({
+      where: { type: 'admin' },
+      select: { id: true },
+    });
+
+    for (const admin of admins) {
+      await this.notificationRepository.createNotification({
+        receiver_id: admin.id,
+        title: 'New Member Lead Created',
+        description: `New member lead created by "${memberLead.member.name}" for plan "${memberLead.plan.title}".`,
+        type: 'package',
+      });
+    }
 
     return {
       success: true,

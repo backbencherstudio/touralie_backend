@@ -28,14 +28,12 @@ import { UpdateWatchProgressDto } from './dto/update-watch-progress.dto';
 
 @ApiTags('Library')
 @ApiBearerAuth('user_token')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.USER)
 @Controller('library')
 export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
   @ApiOperation({
-    summary: 'Browse Video Library (Personalized)',
+    summary: 'Browse Video Library (Personalized) (User Only)',
     description: `
 Fetch a paginated list of published videos. 
 If the authenticated user has personalization goals (e.g., "fat_loss") set in their profile, videos matching those tags will be prioritized in the "Best Match" section.
@@ -82,6 +80,8 @@ If the authenticated user has personalization goals (e.g., "fat_loss") set in th
       },
     },
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER)
   @Get()
   findAll(@Req() req: Request, @Query() query: QueryPublicLibraryDto) {
     const { userId } = req?.user;
@@ -89,7 +89,7 @@ If the authenticated user has personalization goals (e.g., "fat_loss") set in th
   }
 
   @ApiOperation({
-    summary: 'Get All Available Categories',
+    summary: 'Get All Available Categories (Public)',
     description: 'Retrieves a list of all video categories used in the library for filtering purposes.',
   })
   @ApiResponse({
@@ -117,15 +117,17 @@ If the authenticated user has personalization goals (e.g., "fat_loss") set in th
     return this.libraryService.findAllCategories();
   }
 
-  @Get('favorites')
   @ApiOperation({
-    summary: 'Get My Favorite Videos',
+    summary: 'Get My Favorite Videos (User Only)',
     description: 'Returns a paginated list of videos that the user has marked as favorite.',
   })
   @ApiResponse({
     status: 200,
     description: 'List of favorite videos.',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER)
+  @Get('favorites')
   findAllFavoriteVideos(
     @Req() req: Request,
     @Query() query: QueryPublicLibraryDto,
@@ -134,9 +136,8 @@ If the authenticated user has personalization goals (e.g., "fat_loss") set in th
     return this.libraryService.findAllFavoriteVideos(query, userId);
   }
 
-  @Get('watch-history')
   @ApiOperation({
-    summary: 'Get My Watch History',
+    summary: 'Get My Watch History (User Only)',
     description: `
 Returns a list of videos the user has previously watched or started. 
 Includes progress details like last played position.
@@ -149,6 +150,9 @@ Includes progress details like last played position.
     status: 200,
     description: 'User watch history.',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER)
+  @Get('watch-history')
   findAllWatchHistory(
     @Req() req: Request,
     @Query() query: QueryWatchHistoryDto,
@@ -158,7 +162,7 @@ Includes progress details like last played position.
   }
 
   @ApiOperation({
-    summary: 'Get Video Details & Chapters',
+    summary: 'Get Video Details & Chapters (User Only)',
     description: `
 Fetch comprehensive details for a single video, including its chapters and the user's current watch progress.
 Use this before launching the video player.
@@ -168,6 +172,8 @@ Use this before launching the video player.
     status: 200,
     description: 'Complete video object with chapters.',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER)
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: Request) {
     const { userId } = req?.user as any;
@@ -175,7 +181,7 @@ Use this before launching the video player.
   }
 
   @ApiOperation({
-    summary: 'Toggle Favorite Status',
+    summary: 'Toggle Favorite Status (User Only)',
     description: `
 Marks a video as favorite or removes it from favorites if already present.
 Returns the new status.
@@ -185,6 +191,8 @@ Returns the new status.
     status: 200,
     description: 'Favorite status updated.',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER)
   @Patch(':id/favorite')
   favorite(@Param('id') id: string, @Req() req: Request) {
     const { userId } = req?.user;
@@ -192,7 +200,7 @@ Returns the new status.
   }
 
   @ApiOperation({
-    summary: 'Update Playback Progress',
+    summary: 'Update Playback Progress (User Only)',
     description: `
 Saves the user's current playback position in a video. 
 Call this periodically during playback to ensure progress is saved.
@@ -206,6 +214,8 @@ Call this periodically during playback to ensure progress is saved.
     status: 200,
     description: 'Progress saved successfully.',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER)
   @Patch(':id/progress')
   updateProgress(
     @Param('id') id: string,

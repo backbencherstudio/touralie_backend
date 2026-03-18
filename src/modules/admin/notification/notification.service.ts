@@ -5,6 +5,8 @@ import appConfig from '../../../config/app.config';
 import { UserRepository } from '../../../common/repository/user/user.repository';
 import { Role } from '../../../common/guard/role/role.enum';
 
+import { QueryNotificationDto } from './dto/query-notification.dto';
+
 @Injectable()
 export class NotificationService {
   constructor(
@@ -12,8 +14,12 @@ export class NotificationService {
     private userRepository: UserRepository,
   ) {}
 
-  async findAll(user_id: string) {
+  async findAll(user_id: string, query: QueryNotificationDto) {
     try {
+      const page = Number(query.page) || 1;
+      const limit = Number(query.limit) || 10;
+      const skip = (page - 1) * limit;
+
       const where_condition = {};
       const userDetails = await this.userRepository.getUserDetails(user_id);
 
@@ -23,9 +29,6 @@ export class NotificationService {
           { receiver_id: { equals: null } },
         ];
       }
-      // else if (userDetails.type == Role.VENDOR) {
-      //   where_condition['receiver_id'] = user_id;
-      // }
 
       const notifications = await this.prisma.notification.findMany({
         where: {
@@ -33,56 +36,102 @@ export class NotificationService {
         },
         select: {
           id: true,
-          sender_id: true,
-          receiver_id: true,
-          entity_id: true,
           created_at: true,
-          sender: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatar: true,
-            },
-          },
-          receiver: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatar: true,
-            },
-          },
+          read_at: true,
           notification_event: {
             select: {
-              id: true,
               type: true,
-              text: true,
+              title: true,
+              description: true,
             },
           },
         },
+        orderBy: {
+          created_at: 'desc',
+        },
+        skip: skip,
+        take: limit,
       });
 
-      // add url to avatar
-      if (notifications.length > 0) {
-        for (const notification of notifications) {
-          if (notification.sender && notification.sender.avatar) {
-            notification.sender['avatar_url'] = SojebStorage.url(
-              appConfig().storageUrl.avatar + notification.sender.avatar,
-            );
-          }
+      const total = await this.prisma.notification.count({
+        where: {
+          ...where_condition,
+        },
+      });
 
-          if (notification.receiver && notification.receiver.avatar) {
-            notification.receiver['avatar_url'] = SojebStorage.url(
-              appConfig().storageUrl.avatar + notification.receiver.avatar,
-            );
-          }
-        }
-      }
+      const formattedNotifications = notifications.map((n) => ({
+        id: n.id,
+        title: n.notification_event?.title,
+        description: n.notification_event?.description,
+        type: n.notification_event?.type,
+        is_read: n.read_at ? true : false,
+        created_at: n.created_at,
+      }));
 
       return {
         success: true,
-        data: notifications,
+        data: formattedNotifications,
+        meta_data: {
+          page,
+          limit,
+          total,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async markAsRead(id: string, user_id: string) {
+    try {
+      const notification = await this.prisma.notification.findUnique({
+        where: { id },
+      });
+
+      if (!notification) {
+        return {
+          success: false,
+          message: 'Notification not found',
+        };
+      }
+
+      await this.prisma.notification.update({
+        where: { id },
+        data: {
+          read_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Notification marked as read',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async markAllAsRead(user_id: string) {
+    try {
+      await this.prisma.notification.updateMany({
+        where: {
+          receiver_id: user_id,
+          read_at: null,
+        },
+        data: {
+          read_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        message: 'All notifications marked as read',
       };
     } catch (error) {
       return {
@@ -132,7 +181,7 @@ export class NotificationService {
       // check if notification exists
       const notifications = await this.prisma.notification.findMany({
         where: {
-          OR: [{ receiver_id: user_id }, { receiver_id: null }],
+          receiver_id: user_id,
         },
       });
 

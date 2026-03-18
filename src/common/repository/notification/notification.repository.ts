@@ -7,7 +7,8 @@ export class NotificationRepository {
    * Create a notification
    * @param sender_id - The ID of the user who fired the event
    * @param receiver_id - The ID of the user to notify
-   * @param text - The text of the notification
+   * @param title - The title of the notification
+   * @param description - The description of the notification
    * @param type - The type of the notification
    * @param entity_id - The ID of the entity related to the notification
    * @returns The created notification
@@ -15,13 +16,15 @@ export class NotificationRepository {
   async createNotification({
     sender_id,
     receiver_id,
-    text,
+    title,
+    description,
     type,
     entity_id,
   }: {
     sender_id?: string;
     receiver_id?: string;
-    text?: string;
+    title?: string;
+    description?: string;
     type?:
       | 'message'
       | 'comment'
@@ -36,13 +39,17 @@ export class NotificationRepository {
     if (type) {
       notificationEventData['type'] = type;
     }
-    if (text) {
-      notificationEventData['text'] = text;
+    if (title) {
+      notificationEventData['title'] = title;
+    }
+    if (description) {
+      notificationEventData['description'] = description;
     }
     const notificationEvent = await this.prisma.notificationEvent.create({
       data: {
         type: type,
-        text: text,
+        title: title,
+        description: description,
         ...notificationEventData,
       },
     });

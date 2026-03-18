@@ -21,6 +21,7 @@ import { DateHelper } from '../../common/helper/date.helper';
 import { StripePayment } from '../../common/lib/Payment/stripe/StripePayment';
 import { StringHelper } from '../../common/helper/string.helper';
 import { ActivityRepository } from '../../common/repository/activity/activity.repository';
+import { NotificationRepository } from '../../common/repository/notification/notification.repository';
 
 @Injectable()
 export class AuthService {
@@ -31,6 +32,7 @@ export class AuthService {
     private userRepository: UserRepository,
     private ucodeRepository: UcodeRepository,
     private activityRepository: ActivityRepository,
+    private notificationRepository: NotificationRepository,
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
@@ -362,6 +364,21 @@ export class AuthService {
         'New Member Registered',
         `A new member "${name}" (${email}) has joined the platform.`,
       );
+
+      // Notify Admins
+      const admins = await this.prisma.user.findMany({
+        where: { type: 'admin' },
+        select: { id: true },
+      });
+
+      for (const admin of admins) {
+        await this.notificationRepository.createNotification({
+          receiver_id: admin.id,
+          title: 'New User Registered',
+          description: `A new user ${name} (${email}) has registered on the platform.`,
+          type: 'package', 
+        });
+      }
     }
 
     if (user == null && user.success == false) {

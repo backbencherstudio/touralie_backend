@@ -93,6 +93,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
+      defaultModelsExpandDepth: -1,
 
       responseInterceptor: function (response) {
         console.log('Swagger Interceptor Fired! URL:', response.url);

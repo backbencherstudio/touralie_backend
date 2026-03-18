@@ -56,7 +56,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({
-    summary: 'Get current user details',
+    summary: 'Get current user details (User Only)',
     description: `
 Retrieves the profile information of the currently authenticated user.
 The request must include a valid Bearer Token (JWT) in the Authorization header.
@@ -105,7 +105,7 @@ The request must include a valid Bearer Token (JWT) in the Authorization header.
   }
 
   @ApiOperation({
-    summary: 'Register a new user account',
+    summary: 'Register a new user account (Public)',
     description: `
 Creates a new user account in the system. Upon successful registration, a verification code (OTP) is sent to the provided email address.
 
@@ -193,7 +193,7 @@ Creates a new user account in the system. Upon successful registration, a verifi
 
   // login user
   @ApiOperation({
-    summary: 'User Login (Email & Password)',
+    summary: 'User Login (Public)',
     description: `
 Authenticates a user and returns access and refresh tokens.
 
@@ -249,7 +249,7 @@ Authenticates a user and returns access and refresh tokens.
   }
 
   @ApiExcludeEndpoint()
-  @ApiOperation({ summary: 'Refresh token' })
+  @ApiOperation({ summary: 'Refresh token (User Only)' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('refresh-token')
@@ -308,7 +308,7 @@ Authenticates a user and returns access and refresh tokens.
 
   // update user
   @ApiOperation({
-    summary: 'Update User Profile',
+    summary: 'Update User Profile (User Only)',
     description:
       'Provide only the fields you wish to update. Any fields left empty or omitted will remain unchanged in the system.',
   })
@@ -353,7 +353,7 @@ Authenticates a user and returns access and refresh tokens.
   // --------------change password---------
 
   @ApiOperation({
-    summary: 'Forgot password',
+    summary: 'Forgot password (Public)',
     description: `
 Forgot password.
 
@@ -392,7 +392,7 @@ Required fields:
 
   // verify email to verify the email
   @ApiOperation({
-    summary: 'Verify email',
+    summary: 'Verify email (Public)',
     description: `
 Verify email.
 
@@ -439,7 +439,7 @@ Required fields:
 
   // resend verification email to verify the email
   @ApiOperation({
-    summary: 'Resend verification email',
+    summary: 'Resend verification email (Public)',
     description: `
 Resend verification email.
 
@@ -478,7 +478,7 @@ Required fields:
 
   // reset password if user forget the password
   @ApiOperation({
-    summary: 'Reset password',
+    summary: 'Reset password (Public)',
     description: `
 Reset password.
 
@@ -531,7 +531,7 @@ Required fields:
 
   // change password if user want to change the password
   @ApiOperation({
-    summary: 'Change password',
+    summary: 'Change password (User Only)',
     description: `
 Change password.
 

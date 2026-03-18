@@ -7,12 +7,14 @@ import { Prisma } from 'prisma/generated/client';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
 
 @Injectable()
 export class PrescriptionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityRepository: ActivityRepository,
+    private readonly notificationRepository: NotificationRepository,
   ) {}
 
   async createPrescription(createPrescriptionDto: CreatePrescriptionDto) {
@@ -45,6 +47,16 @@ export class PrescriptionService {
       'New Prescription Created',
       `A new prescription has been created with ${createPrescriptionDto.video_ids.length} videos for ${createPrescriptionDto.patient_ids.length} patients.`,
     );
+
+    // Notify Patients
+    for (const patientId of createPrescriptionDto.patient_ids) {
+      await this.notificationRepository.createNotification({
+        receiver_id: patientId,
+        title: 'New Prescription Assigned',
+        description: `A new prescription has been assigned to you with ${createPrescriptionDto.video_ids.length} videos.`,
+        type: 'blog',
+      });
+    }
 
     return {
       success: true,

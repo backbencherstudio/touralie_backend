@@ -14,27 +14,28 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiQuery,
 } from '@nestjs/swagger';
-import { Role } from '../../../common/guard/role/role.enum';
-import { Roles } from '../../../common/guard/role/roles.decorator';
-import { RolesGuard } from '../../../common/guard/role/roles.guard';
-import { JwtAuthGuard } from '../../../modules/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Request } from 'express';
+import { RolesGuard } from 'src/common/guard/role/roles.guard';
+import { Roles } from 'src/common/guard/role/roles.decorator';
+import { Role } from 'src/common/guard/role/role.enum';
 
 import { QueryNotificationDto } from './dto/query-notification.dto';
 
-@ApiBearerAuth()
 @ApiTags('Notification')
+@ApiBearerAuth('user_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
-@Controller('admin/notification')
+@Roles(Role.USER)
+@Controller('notification')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @ApiOperation({
-    summary: 'Retrieve All My Notifications (Admin Only)',
+    summary: 'Retrieve All My Notifications (User Only)',
     description: `
-Fetch a paginated list of all notifications for the authenticated administrator. 
+Fetch a paginated list of all notifications for the authenticated user. 
 
 **Notification Details:**
 - **title**: Brief heading of the notification.
@@ -52,9 +53,10 @@ Fetch a paginated list of all notifications for the authenticated administrator.
         data: [
           {
             id: 'cmm632yhc0003kg9wfbdqce74',
-            title: 'New User Registered',
-            description: 'A new user John Doe has registered on the platform.',
-            type: 'package',
+            title: 'New Prescription Assigned',
+            description:
+              'A new prescription has been assigned to you with 5 videos.',
+            type: 'blog',
             created_at: '2026-03-16T10:00:00.000Z',
           },
         ],
@@ -70,12 +72,10 @@ Fetch a paginated list of all notifications for the authenticated administrator.
   async findAll(@Req() req: Request, @Query() query: QueryNotificationDto) {
     try {
       const user_id = req.user.userId;
-
       const notification = await this.notificationService.findAll(
         user_id,
         query,
       );
-
       return notification;
     } catch (error) {
       return {
@@ -86,7 +86,7 @@ Fetch a paginated list of all notifications for the authenticated administrator.
   }
 
   @ApiOperation({
-    summary: 'Delete a Specific Notification (Admin Only)',
+    summary: 'Delete a Specific Notification (User Only)',
     description: 'Permanently removes a single notification record by its ID.',
   })
   @ApiResponse({
@@ -104,7 +104,6 @@ Fetch a paginated list of all notifications for the authenticated administrator.
     try {
       const user_id = req.user.userId;
       const notification = await this.notificationService.remove(id, user_id);
-
       return notification;
     } catch (error) {
       return {
@@ -115,9 +114,9 @@ Fetch a paginated list of all notifications for the authenticated administrator.
   }
 
   @ApiOperation({
-    summary: 'Clear All My Notifications (Admin Only)',
+    summary: 'Clear All My Notifications (User Only)',
     description:
-      'Removes all notification records associated with the authenticated administrator.',
+      'Removes all notification records associated with the authenticated user.',
   })
   @ApiResponse({
     status: 200,
@@ -134,7 +133,6 @@ Fetch a paginated list of all notifications for the authenticated administrator.
     try {
       const user_id = req.user.userId;
       const notification = await this.notificationService.removeAll(user_id);
-
       return notification;
     } catch (error) {
       return {
@@ -145,7 +143,7 @@ Fetch a paginated list of all notifications for the authenticated administrator.
   }
 
   @ApiOperation({
-    summary: 'Mark a Specific Notification as Read (Admin Only)',
+    summary: 'Mark a Specific Notification as Read (User Only)',
     description: 'Updates the read status of a single notification.',
   })
   @ApiResponse({
@@ -166,7 +164,6 @@ Fetch a paginated list of all notifications for the authenticated administrator.
         id,
         user_id,
       );
-
       return notification;
     } catch (error) {
       return {
@@ -177,9 +174,9 @@ Fetch a paginated list of all notifications for the authenticated administrator.
   }
 
   @ApiOperation({
-    summary: 'Mark All My Notifications as Read (Admin Only)',
+    summary: 'Mark All My Notifications as Read (User Only)',
     description:
-      'Updates the read status of all unread notifications for the admin.',
+      'Updates the read status of all unread notifications for the user.',
   })
   @ApiResponse({
     status: 200,
@@ -197,7 +194,6 @@ Fetch a paginated list of all notifications for the authenticated administrator.
       const user_id = req.user.userId;
       const notification =
         await this.notificationService.markAllAsRead(user_id);
-
       return notification;
     } catch (error) {
       return {
