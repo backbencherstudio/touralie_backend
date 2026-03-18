@@ -122,7 +122,7 @@ async function bootstrap() {
 
               var key = type === 'admin' ? 'admin_token' : 'user_token';
 
-              var ui = (window as any).ui;
+              var ui = window['ui'];
 
               if (ui) {
                 var authObj = {};

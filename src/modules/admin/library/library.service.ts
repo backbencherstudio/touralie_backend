@@ -325,6 +325,17 @@ export class LibraryService {
 
     const data: any = { ...updateLibraryDto };
 
+    // sanitize data: remove empty strings, 'null', or 'undefined'
+    Object.keys(data).forEach((key) => {
+      if (
+        data[key] === '' ||
+        data[key] === 'null' ||
+        data[key] === 'undefined'
+      ) {
+        delete data[key];
+      }
+    });
+
     if (thumbnailFile) {
       // delete old thumbnail if exists
       if (video.thumbnail_url) {
@@ -358,21 +369,44 @@ export class LibraryService {
   }
 
   async remove(id: string) {
-    const videoToDelete = await this.prisma.video.findUnique({ where: { id } });
+    const videoToDelete = await this.prisma.video.findUnique({
+      where: { id },
+      include: { video_chapters: true },
+    });
+
+    if (!videoToDelete) throw new Error('Video not found');
+
+    // 1. Delete video file
+    if (videoToDelete.url) {
+      await SojebStorage.delete(videoToDelete.url);
+    }
+
+    // 2. Delete video thumbnail
+    if (videoToDelete.thumbnail_url) {
+      await SojebStorage.delete(videoToDelete.thumbnail_url);
+    }
+
+    // 3. Delete chapters thumbnails
+    if (videoToDelete.video_chapters) {
+      for (const chapter of videoToDelete.video_chapters) {
+        if (chapter.thumbnail_url) {
+          await SojebStorage.delete(chapter.thumbnail_url);
+        }
+      }
+    }
+
     const video = await this.prisma.video.delete({
       where: { id },
     });
 
-    if (videoToDelete) {
-      await this.activityRepository.createActivity(
-        'Video Deleted',
-        `Video "${videoToDelete.title}" has been permanently deleted.`,
-      );
-    }
+    await this.activityRepository.createActivity(
+      'Video Deleted',
+      `Video "${videoToDelete.title}" and its associated files have been permanently deleted.`,
+    );
 
     return {
       success: true,
-      message: 'Video deleted successfully',
+      message: 'Video and associated files deleted successfully',
       data: video,
     };
   }
@@ -400,7 +434,11 @@ export class LibraryService {
     if (thumbnail) {
       const thumbExtension = thumbnail.originalname.split('.').pop();
       thumbnailUrl = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(thumbnailUrl, thumbnail.buffer, thumbnail.mimetype);
+      await SojebStorage.put(
+        thumbnailUrl,
+        thumbnail.buffer,
+        thumbnail.mimetype,
+      );
     }
 
     const { thumbnail: _, ...rest } = chapterData;
@@ -447,7 +485,11 @@ export class LibraryService {
       }
       const thumbExtension = thumbnail.originalname.split('.').pop();
       const thumbnailUrl = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(thumbnailUrl, thumbnail.buffer, thumbnail.mimetype);
+      await SojebStorage.put(
+        thumbnailUrl,
+        thumbnail.buffer,
+        thumbnail.mimetype,
+      );
       data.thumbnail_url = thumbnailUrl;
     }
 
@@ -471,6 +513,11 @@ export class LibraryService {
     if (!chapter) throw new Error('Chapter not found');
     if (chapter.video?.status === VideoStatus.UPLOADING) {
       throw new Error('Cannot remove chapters while video is uploading.');
+    }
+
+    // Delete chapter thumbnail
+    if (chapter.thumbnail_url) {
+      await SojebStorage.delete(chapter.thumbnail_url);
     }
 
     return {

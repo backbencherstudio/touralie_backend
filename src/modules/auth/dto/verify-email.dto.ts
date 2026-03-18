@@ -13,7 +13,7 @@ export class VerifyEmailDto {
   @IsNotEmpty()
   @ApiProperty({
     description: 'The verification token sent to the user’s email',
-    example: '123456',
+    example: '12345',
   })
   token: string;
 }
