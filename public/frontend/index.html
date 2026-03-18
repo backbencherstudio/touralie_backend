@@ -151,31 +151,42 @@
     <div class="container">
         <h1>Video System Tester (Fetch API)</h1>
 
-        <!-- UPLOAD SECTION -->
+        <!-- PHASE 2: UPLOAD -->
         <div class="card">
-            <div class="card-title">Direct Storage Upload</div>
+            <div class="card-title">1. Upload to Storage (PUT)</div>
             <div class="form-group">
                 <label>Pre-signed Upload URL</label>
-                <input type="text" id="uploadUrl" placeholder="Paste the upload_url here...">
-            </div>
-            <div class="form-group">
-                <label>Video Key (Optional)</label>
-                <input type="text" id="videoKey" placeholder="e.g. temp-videos/xyz.mp4">
+                <input type="text" id="uploadUrl" placeholder="Paste the upload_url from Swagger here...">
             </div>
             <div class="form-group">
                 <label>Select Video File</label>
                 <input type="file" id="videoFile" accept="video/*">
             </div>
-            <button id="uploadBtn" onclick="performUpload()">Upload with Fetch</button>
-            <p class="note">* Note: Fetch doesn't support real-time upload progress. Bar will jump to 100% when done.</p>
+            <button id="uploadBtn" onclick="performUpload()">Upload to Storage</button>
 
             <div class="progress-wrapper" id="progressWrapper">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
 
-            <div id="responseContainer">
-                <label style="margin-top: 1rem;">Server Response:</label>
-                <pre><code id="responseCode"></code></pre>
+            <div id="uploadResponse" style="margin-top: 1rem; display: none;">
+                <pre><code id="uploadCode"></code></pre>
+            </div>
+        </div>
+
+        <!-- PHASE 3: COMPLETE -->
+        <div class="card">
+            <div class="card-title">2. Complete Upload</div>
+            <div class="form-group">
+                <label>Admin Token (Bearer)</label>
+                <input type="text" id="adminToken" placeholder="Paste your admin JWT token here...">
+            </div>
+            <div class="form-group">
+                <label>Video ID</label>
+                <input type="text" id="videoId" placeholder="Paste the video_id from Swagger response here...">
+            </div>
+            <button onclick="completeUpload()">Complete Upload</button>
+            <div id="completeResponse" style="margin-top: 1rem; display: none;">
+                <pre><code id="completeCode"></code></pre>
             </div>
         </div>
 
@@ -212,56 +223,78 @@
         const responseCode = document.getElementById('responseCode');
         const videoPlayer = document.getElementById('videoPlayer');
 
+
         async function performUpload() {
             const url = document.getElementById('uploadUrl').value.trim();
             const file = document.getElementById('videoFile').files[0];
 
-            if (!url) return alert('Please enter the Upload URL.');
+            if (!url) return alert('Please enter or get the Upload URL.');
             if (!file) return alert('Please select a video file.');
 
             uploadBtn.disabled = true;
             progressWrapper.style.display = 'block';
-            progressBar.style.width = '30%'; // Fake start
-            responseContainer.style.display = 'none';
+            progressBar.style.width = '30%'; 
+            document.getElementById('uploadResponse').style.display = 'none';
 
             try {
-                // Read file as ArrayBuffer to avoid automatic Content-Type headers
                 const arrayBuffer = await file.arrayBuffer();
                 const contentType = getContentType(file.name);
                 
                 const response = await fetch(url, {
                     method: 'PUT',
                     body: arrayBuffer,
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': contentType
-                    }
+                    headers: { 'Content-Type': contentType }
                 });
 
                 progressBar.style.width = '100%';
                 uploadBtn.disabled = false;
-                responseContainer.style.display = 'block';
+                document.getElementById('uploadResponse').style.display = 'block';
 
                 const responseData = {
                     status: response.status,
                     statusText: response.statusText,
-                    ok: response.ok,
-                    info: "Fetch upload complete. Response body is usually empty for S3 PUT."
+                    ok: response.ok
                 };
 
-                responseCode.textContent = JSON.stringify(responseData, null, 2);
+                document.getElementById('uploadCode').textContent = JSON.stringify(responseData, null, 2);
 
                 if (response.ok) {
-                    alert('Upload Successful!');
+                    alert('Phase 2 Success: Video uploaded to storage!');
                 } else {
                     const errorText = await response.text();
                     console.error('Upload error:', errorText);
-                    alert(`Upload failed with status ${response.status}`);
+                    alert(`Upload failed: ${response.status}`);
                 }
             } catch (err) {
                 uploadBtn.disabled = false;
                 console.error('Fetch error:', err);
-                alert('Network error or CORS issue. Check console.');
+                alert('Network/CORS error. Check console. If using MinIO locally, ensure CORS is enabled.');
+            }
+        }
+
+        async function completeUpload() {
+            const token = document.getElementById('adminToken').value.trim();
+            const videoId = document.getElementById('videoId').value.trim();
+            if (!token || !videoId) return alert('Token and Video ID required');
+
+            try {
+                const response = await fetch(`/api/admin/library/${videoId}/complete-upload`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const res = await response.json();
+                document.getElementById('completeResponse').style.display = 'block';
+                document.getElementById('completeCode').textContent = JSON.stringify(res, null, 2);
+
+                if (res.success) {
+                    alert('Phase 3 Success: Video finalized!');
+                } else {
+                    alert('Error: ' + res.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection error.');
             }
         }
 
@@ -277,8 +310,8 @@
             const time = parseFloat(document.getElementById('startTime').value);
             if (isNaN(time)) return alert('Enter a valid time in seconds.');
             
-            player.currentTime = time;
-            player.play();
+            videoPlayer.currentTime = time;
+            videoPlayer.play();
         }
 
         function getContentType(filename) {

@@ -68,8 +68,9 @@ export class LibraryService {
         video_id: video.id,
         upload_url: uploadUrl,
         status: video.status,
-        thumbnail_url: video.thumbnail_url,
-        key,
+        thumbnail_url: video.thumbnail_url
+          ? SojebStorage.url(video.thumbnail_url)
+          : null,
       },
     };
   }
@@ -99,7 +100,6 @@ export class LibraryService {
       data: {
         video_id: id,
         upload_url: uploadUrl,
-        key,
       },
     };
   }
