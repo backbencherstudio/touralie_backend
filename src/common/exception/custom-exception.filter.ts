@@ -25,7 +25,8 @@ export class CustomExceptionFilter implements ExceptionFilter {
     let errorMessage: string | object = 'Internal server error';
 
     if (isHttpException) {
-      errorMessage = exception.getResponse();
+      const exceptionResponse: any = exception.getResponse();
+      errorMessage = exceptionResponse.message || exceptionResponse;
     } else if (isDevelopment) {
       errorMessage =
         exception instanceof Error
