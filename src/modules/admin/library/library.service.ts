@@ -128,13 +128,29 @@ export class LibraryService {
         `Video "${updatedVideo.title || 'Untitled'}" upload has been completed and is now in draft.`,
       );
 
-      return updatedVideo;
+      return {
+        success: true,
+        message: 'Video upload completed successfully',
+        data: {
+          ...updatedVideo,
+          url: updatedVideo.url ? SojebStorage.url(updatedVideo.url) : null,
+          thumbnail_url: updatedVideo.thumbnail_url
+            ? SojebStorage.url(updatedVideo.thumbnail_url)
+            : null,
+        },
+      };
     }
 
     return {
       success: true,
       message: 'Video upload completed successfully',
-      data: video,
+      data: {
+        ...video,
+        url: video.url ? SojebStorage.url(video.url) : null,
+        thumbnail_url: video.thumbnail_url
+          ? SojebStorage.url(video.thumbnail_url)
+          : null,
+      },
     };
   }
 
@@ -168,9 +184,8 @@ export class LibraryService {
   }
 
   async deleteCategory(id: string) {
-    const category = await this.prisma.category.update({
+    const category = await this.prisma.category.delete({
       where: { id },
-      data: { deleted_at: new Date() },
     });
 
     await this.activityRepository.createActivity(
@@ -181,7 +196,6 @@ export class LibraryService {
     return {
       success: true,
       message: 'Category deleted successfully',
-      data: category,
     };
   }
 

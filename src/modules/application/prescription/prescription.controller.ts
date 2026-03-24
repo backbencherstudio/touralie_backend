@@ -109,19 +109,6 @@ export class PrescriptionController {
                 points: { type: 'array', items: { type: 'string' } },
               },
             },
-            video_chapters: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  title: { type: 'string' },
-                  start_time: { type: 'string' },
-                  end_time: { type: 'string' },
-                  thumbnail_url: { type: 'string' },
-                },
-              },
-            },
           },
         },
       },

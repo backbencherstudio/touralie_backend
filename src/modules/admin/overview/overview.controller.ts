@@ -105,4 +105,39 @@ export class OverviewController {
   getActivities(@Query() query: PaginationQueryDto) {
     return this.overviewService.getActivities(query);
   }
+
+  @ApiOperation({
+    summary: 'Get stats',
+    description: `Get stats for the specified year and months. The response includes the total number of users and active users for each month.`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stats',
+    schema: {
+      type: 'object',
+      properties: {
+        success: {
+          type: 'boolean',
+          example: true,
+        },
+        data: {
+          type: 'object',
+          properties: {
+            total_patients: {
+              type: 'number',
+              example: 10,
+            },
+            total_prescriptions: {
+              type: 'number',
+              example: 5,
+            },
+          },
+        },
+      },
+    },
+  })
+  @Get('stats')
+  getStats() {
+    return this.overviewService.getStats();
+  }
 }

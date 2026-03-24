@@ -146,6 +146,24 @@ Includes profile details, settings, and activity summary.
   @ApiResponse({
     status: 200,
     description: 'Detailed user profile data.',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          id: 'cmm632yhc0003kg9wfbdqce74',
+          name: 'John Doe',
+          email: 'john@example.com',
+          weight: 70,
+          height: 175,
+          gender: 'male',
+          personalization: ['fat_loss', 'muscle_gain'],
+          type: 'user',
+          date_of_birth: '1998-05-20T00:00:00.000Z',
+          avatar: 'avatar.jpg',
+          avatar_url: 'https://example.com/storage/avatars/avatar.jpg',
+        },
+      },
+    },
   })
   @Get(':id')
   async findOne(@Param('id') id: string) {

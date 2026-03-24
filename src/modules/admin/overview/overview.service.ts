@@ -5,6 +5,7 @@ import {
   UserStatsQueryDto,
 } from './dto/query-overview.dto';
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+import { Role } from 'src/common/guard/role/role.enum';
 
 @Injectable()
 export class OverviewService {
@@ -71,6 +72,29 @@ export class OverviewService {
     return {
       success: true,
       data: stats,
+    };
+  }
+
+  async getStats() {
+    const totalPatients = await this.prisma.user.count({
+      where: {
+        deleted_at: null,
+        type: Role.USER,
+      },
+    });
+
+    const totalPrescriptions = await this.prisma.prescription.count({
+      where: {
+        deleted_at: null,
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        total_patients: totalPatients,
+        total_prescriptions: totalPrescriptions,
+      },
     };
   }
 }

@@ -124,6 +124,36 @@ If the authenticated user has personalization goals (e.g., "fat_loss") set in th
   @ApiResponse({
     status: 200,
     description: 'List of favorite videos.',
+    schema: {
+      example: {
+        success: true,
+        message: 'Videos found successfully',
+        data: [
+          {
+            id: 'cmm632yhc0003kg9wfbdqce74',
+            title: 'Strength Training 101',
+            duration: 1200,
+            level: 'BEGINNER',
+            created_at: '2026-03-16T10:00:00.000Z',
+            is_favorite: true,
+            thumbnail_url: 'https://example.com/storage/videos/thumb.jpg',
+            category: 'Fitness',
+            chapters_count: 5,
+          },
+        ],
+        meta_data: {
+          page: 1,
+          limit: 10,
+          total: 5,
+          search: '',
+          filter: {
+            category_id: null,
+            start_date: null,
+            end_date: null,
+          },
+        },
+      },
+    },
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER)
@@ -149,6 +179,37 @@ Includes progress details like last played position.
   @ApiResponse({
     status: 200,
     description: 'User watch history.',
+    schema: {
+      example: {
+        success: true,
+        message: 'Watch history found successfully',
+        data: [
+          {
+            id: 'cmm632yhc0003kg9wfbdqce74',
+            title: 'Yoga for Beginners',
+            duration: 900,
+            level: 'BEGINNER',
+            created_at: '2026-03-15T10:00:00.000Z',
+            is_completed: false,
+            last_played_position: 450,
+            thumbnail_url: 'https://example.com/storage/videos/yoga.jpg',
+            category: 'Wellness',
+            chapters_count: 3,
+          },
+        ],
+        meta_data: {
+          page: 1,
+          limit: 10,
+          total: 12,
+          search: '',
+          filter: {
+            category_id: null,
+            start_date: null,
+            end_date: null,
+          },
+        },
+      },
+    },
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER)
@@ -171,6 +232,35 @@ Use this before launching the video player.
   @ApiResponse({
     status: 200,
     description: 'Complete video object with chapters.',
+    schema: {
+      example: {
+        success: true,
+        message: 'Video found successfully',
+        data: {
+          id: 'cmm632yhc0003kg9wfbdqce74',
+          title: 'Full Body Workout',
+          description: 'A comprehensive workout for all muscle groups.',
+          duration: 1800,
+          level: 'INTERMEDIATE',
+          created_at: '2026-03-14T10:00:00.000Z',
+          is_favorite: false,
+          last_watch_position: 120,
+          is_completed: false,
+          url: 'https://example.com/storage/videos/workout.mp4',
+          thumbnail_url: 'https://example.com/storage/videos/workout.jpg',
+          category: 'Fitness',
+          video_chapters: [
+            {
+              id: 'chap_1',
+              title: 'Warm up',
+              start_time: '00:00:00',
+              end_time: '00:05:00',
+              thumbnail_url: 'https://example.com/storage/videos/warmup.jpg',
+            },
+          ],
+        },
+      },
+    },
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER)
@@ -190,6 +280,12 @@ Returns the new status.
   @ApiResponse({
     status: 200,
     description: 'Favorite status updated.',
+    schema: {
+      example: {
+        success: true,
+        message: 'Video favorited successfully',
+      },
+    },
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER)
@@ -213,6 +309,12 @@ Call this periodically during playback to ensure progress is saved.
   @ApiResponse({
     status: 200,
     description: 'Progress saved successfully.',
+    schema: {
+      example: {
+        success: true,
+        message: 'Watch progress updated successfully',
+      },
+    },
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER)

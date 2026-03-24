@@ -119,19 +119,44 @@ export class PrescriptionService {
         deleted_at: null,
         status: 'PUBLISHED',
       },
-      include: {
-        category: true,
-        video_chapters: true,
+      select: {
+        id: true,
+        title: true,
+        duration: true,
+        level: true,
+        url: true,
+        thumbnail_url: true,
+        created_at: true,
+        category: {
+          select: { title: true },
+        },
         watch_histories: {
           where: { user_id: userId },
+          select: {
+            is_completed: true,
+            last_played_position: true,
+            updated_at: true,
+          },
         },
         prescriptions: {
           where: {
             patients: { some: { user_id: userId } },
           },
-          include: { instruction: true },
+          select: {
+            instruction: {
+              select: {
+                description: true,
+                points: true,
+              },
+            },
+          },
           orderBy: { created_at: 'desc' },
           take: 1,
+        },
+        _count: {
+          select: {
+            video_chapters: true,
+          },
         },
       },
     });
@@ -191,36 +216,32 @@ export class PrescriptionService {
       data: {
         id: video.id,
         title: video.title,
-        description: video.description,
-        url: video.url ? SojebStorage.url(video.url) : null,
-        thumbnail_url: video.thumbnail_url
+        duration: video.duration,
+        chapter_count: video._count.video_chapters,
+        thumbnail: video.thumbnail_url
           ? SojebStorage.url(video.thumbnail_url)
           : null,
-        category: video.category?.title || null,
-        duration: video.duration,
-        level: video.level,
-        is_completed: history?.is_completed || false,
-        last_watch_position: history?.last_played_position || 0,
-        watch_status: history?.is_completed
-          ? 'COMPLETED'
-          : history?.last_played_position > 0
-            ? 'IN_PROGRESS'
-            : 'NOT_STARTED',
         instruction: prescription?.instruction
           ? {
               description: prescription.instruction.description,
               points: prescription.instruction.points,
             }
           : null,
-        video_chapters: video.video_chapters.map((chapter: any) => ({
-          id: chapter.id,
-          title: chapter.title,
-          start_time: chapter.start_time,
-          end_time: chapter.end_time,
-          thumbnail_url: chapter.thumbnail_url
-            ? SojebStorage.url(chapter.thumbnail_url)
-            : null,
-        })),
+        watch_status: history?.is_completed
+          ? 'COMPLETED'
+          : history?.last_played_position > 0
+            ? 'IN_PROGRESS'
+            : 'NOT_STARTED',
+        is_completed: history?.is_completed || false,
+        level: video.level,
+        category: video.category?.title || null,
+        url: video.url ? SojebStorage.url(video.url) : null,
+        last_watch_position: history?.last_played_position || 0,
+        watch_progress: history?.is_completed
+          ? 100
+          : video.duration && history?.last_played_position
+            ? Math.round((history.last_played_position / video.duration) * 100)
+            : 0,
       },
     };
   }

@@ -79,17 +79,17 @@ export class LibraryService {
     const total = await this.prisma.video.count({ where });
 
     const formattedVideos = videos.map((video) => ({
-      id: video.id,
-      title: video.title,
-      duration: video.duration,
-      level: video.level,
-      created_at: video.created_at,
-      is_favorite: video.is_favorite,
+      id: video.id ?? null,
+      title: video.title ?? null,
+      duration: video.duration ?? null,
+      level: video.level ?? null,
+      created_at: video.created_at ?? null,
+      is_favorite: video.is_favorite ?? false,
       thumbnail_url: video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
         : null,
-      category: video.category_title,
-      chapters_count: video.chapters_count,
+      category: video.category_title ?? null,
+      chapters_count: video.chapters_count ?? 0,
     }));
 
     return {
