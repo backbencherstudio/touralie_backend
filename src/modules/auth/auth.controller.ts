@@ -437,6 +437,52 @@ Required fields:
     });
   }
 
+  @ApiOperation({
+    summary: 'Check OTP (Public)',
+    description: `
+Check OTP without verifying or removing it.
+
+Required fields:
+- email
+- token
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OTP is valid',
+    schema: {
+      example: {
+        success: true,
+        message: 'OTP is valid',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid token',
+    schema: {
+      example: {
+        success: false,
+        message: 'Invalid token',
+      },
+    },
+  })
+  @Post('check-otp')
+  async checkOtp(@Body() data: VerifyEmailDto) {
+    const email = data.email;
+    const token = data.token;
+    if (!email) {
+      throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
+    }
+    if (!token) {
+      throw new HttpException('Token not provided', HttpStatus.UNAUTHORIZED);
+    }
+    return await this.authService.checkOtp({
+      email: email,
+      token: token,
+    });
+  }
+
   // resend verification email to verify the email
   @ApiOperation({
     summary: 'Resend verification email (Public)',

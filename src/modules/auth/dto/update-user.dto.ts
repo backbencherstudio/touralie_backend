@@ -9,8 +9,16 @@ import {
 } from 'class-validator';
 
 export class UpdateUserDto extends PartialType(
-  OmitType(RegisterUserDto, ['email', 'password'] as const),
+  OmitType(RegisterUserDto, ['email', 'password', 'name'] as const),
 ) {
+  @IsOptional()
+  @ApiProperty({
+    example: 'John Doe (Optional)',
+    description:
+      'Full name of the user. This will be used as the display name. (Optional)',
+    required: false,
+  })
+  name?: string;
   // @IsOptional()
   // @ApiProperty({
   //   description: 'Country',

@@ -56,7 +56,8 @@ export class S3Adapter implements IStorage {
       await this.s3.headObject(params).promise();
       return true;
     } catch (error) {
-      if ((error as AWS.AWSError).code === 'NotFound') {
+      const code = (error as AWS.AWSError).code;
+      if (code === 'NotFound' || code === 'NoSuchKey') {
         return false;
       }
       throw error;
@@ -115,7 +116,8 @@ export class S3Adapter implements IStorage {
       await this.s3.deleteObject(params).promise();
       return true;
     } catch (error) {
-      if ((error as AWS.AWSError).code === 'NotFound') {
+      const code = (error as AWS.AWSError).code;
+      if (code === 'NotFound' || code === 'NoSuchKey') {
         return false;
       }
       throw error;

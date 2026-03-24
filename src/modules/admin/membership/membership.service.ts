@@ -47,8 +47,8 @@ export class MembershipService {
 
   async findAllMemberLeads(query: MemberLeadsQueryDto) {
     const { page, limit, search, start_date, end_date } = query;
-    const skip = (page - 1) * limit;
-    const take = limit;
+    const skip = (page - 1) * limit || 0;
+    const take = limit || 10;
     const where: Prisma.MemberLeadsWhereInput = search
       ? {
           name: { contains: search, mode: 'insensitive' },

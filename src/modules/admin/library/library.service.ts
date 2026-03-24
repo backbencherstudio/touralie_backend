@@ -238,6 +238,9 @@ export class LibraryService {
         },
       },
       where,
+      orderBy: {
+        created_at: 'desc',
+      },
       skip,
       take: limit,
     });
@@ -339,7 +342,9 @@ export class LibraryService {
     if (thumbnailFile) {
       // delete old thumbnail if exists
       if (video.thumbnail_url) {
-        await SojebStorage.delete(video.thumbnail_url);
+        try {
+          await SojebStorage.delete(video.thumbnail_url);
+        } catch (e) {}
       }
 
       const thumbExtension = thumbnailFile.originalname.split('.').pop();
@@ -378,19 +383,25 @@ export class LibraryService {
 
     // 1. Delete video file
     if (videoToDelete.url) {
-      await SojebStorage.delete(videoToDelete.url);
+      try {
+        await SojebStorage.delete(videoToDelete.url);
+      } catch (e) {}
     }
 
     // 2. Delete video thumbnail
     if (videoToDelete.thumbnail_url) {
-      await SojebStorage.delete(videoToDelete.thumbnail_url);
+      try {
+        await SojebStorage.delete(videoToDelete.thumbnail_url);
+      } catch (e) {}
     }
 
     // 3. Delete chapters thumbnails
     if (videoToDelete.video_chapters) {
       for (const chapter of videoToDelete.video_chapters) {
         if (chapter.thumbnail_url) {
-          await SojebStorage.delete(chapter.thumbnail_url);
+          try {
+            await SojebStorage.delete(chapter.thumbnail_url);
+          } catch (e) {}
         }
       }
     }
@@ -481,7 +492,9 @@ export class LibraryService {
 
     if (thumbnail) {
       if (chapter.thumbnail_url) {
-        await SojebStorage.delete(chapter.thumbnail_url);
+        try {
+          await SojebStorage.delete(chapter.thumbnail_url);
+        } catch (e) {}
       }
       const thumbExtension = thumbnail.originalname.split('.').pop();
       const thumbnailUrl = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
@@ -517,7 +530,9 @@ export class LibraryService {
 
     // Delete chapter thumbnail
     if (chapter.thumbnail_url) {
-      await SojebStorage.delete(chapter.thumbnail_url);
+      try {
+        await SojebStorage.delete(chapter.thumbnail_url);
+      } catch (e) {}
     }
 
     return {

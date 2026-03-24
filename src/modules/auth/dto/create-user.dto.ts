@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsDate,
@@ -27,7 +27,8 @@ export class RegisterUserDto {
   @IsNotEmpty()
   @ApiProperty({
     example: 'John Doe',
-    description: 'Full name of the user. This will be used as the display name.',
+    description:
+      'Full name of the user. This will be used as the display name.',
   })
   name: string;
 
@@ -53,7 +54,8 @@ export class RegisterUserDto {
   @IsEmail()
   @ApiProperty({
     example: 'john@example.com',
-    description: 'Unique email address of the user, used for login and verification.',
+    description:
+      'Unique email address of the user, used for login and verification.',
   })
   email: string;
 
@@ -62,11 +64,13 @@ export class RegisterUserDto {
   @IsString()
   @ApiProperty({
     example: 'password123',
-    description: 'Password for the user account. Must be at least 8 characters long.',
+    description:
+      'Password for the user account. Must be at least 8 characters long.',
   })
   password: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @ApiProperty({
     example: 70,
@@ -76,6 +80,7 @@ export class RegisterUserDto {
   weight?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @ApiProperty({
     example: 175,
@@ -89,7 +94,8 @@ export class RegisterUserDto {
   @ApiProperty({
     enum: Gender,
     example: Gender.MALE,
-    description: 'Gender of the user. Can be male, female, or other. (Optional)',
+    description:
+      'Gender of the user. Can be male, female, or other. (Optional)',
     required: false,
   })
   gender?: string;
@@ -105,6 +111,16 @@ export class RegisterUserDto {
   date_of_birth?: Date;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value.split(',').map((s: string) => s.trim());
+      }
+    }
+    return value;
+  })
   @IsArray()
   @IsString({ each: true })
   @ApiProperty({

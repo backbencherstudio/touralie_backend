@@ -40,9 +40,11 @@ export class WebsiteInfoService {
         // delete old logo from storage
         const logo = await this.prisma.websiteInfo.findFirst();
         if (logo) {
-          await SojebStorage.delete(
-            appConfig().storageUrl.websiteInfo + logo.logo,
-          );
+          try {
+            await SojebStorage.delete(
+              appConfig().storageUrl.websiteInfo + logo.logo,
+            );
+          } catch (e) {}
         }
         // upload file
         const fileName = `${StringHelper.randomString()}${files.logo.originalname}`;
@@ -56,9 +58,11 @@ export class WebsiteInfoService {
         // delete old favicon from storage
         const favicon = await this.prisma.websiteInfo.findFirst();
         if (favicon) {
-          await SojebStorage.delete(
-            appConfig().storageUrl.websiteInfo + favicon.favicon,
-          );
+          try {
+            await SojebStorage.delete(
+              appConfig().storageUrl.websiteInfo + favicon.favicon,
+            );
+          } catch (e) {}
         }
         // upload file
         const fileName = `${StringHelper.randomString()}${files.favicon.originalname}`;

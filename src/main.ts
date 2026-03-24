@@ -22,7 +22,10 @@ async function bootstrap() {
   // app.use('/payment/stripe/webhook', express.raw({ type: 'application/json' }));
 
   app.setGlobalPrefix('api');
-  app.enableCors();
+  app.enableCors({
+    origin: ['*', 'http://localhost:3001', 'http://localhost:3000'],
+    credentials: true,
+  });
   app.use(
     helmet({
       contentSecurityPolicy: false, // Disable CSP to ensure Swagger UI assets load

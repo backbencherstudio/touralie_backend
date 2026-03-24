@@ -124,9 +124,11 @@ export class AuthService {
         select: { avatar: true },
       });
       if (oldImage.avatar) {
-        await SojebStorage.delete(
-          appConfig().storageUrl.avatar + oldImage.avatar,
-        );
+        try {
+          await SojebStorage.delete(
+            appConfig().storageUrl.avatar + oldImage.avatar,
+          );
+        } catch (e) {}
       }
 
       // upload file
@@ -539,6 +541,31 @@ export class AuthService {
         return {
           success: true,
           message: 'Email verified successfully',
+        };
+      } else {
+        throw new UnauthorizedException('Invalid token');
+      }
+    } else {
+      throw new NotFoundException('Email not found');
+    }
+  }
+
+  async checkOtp({ email, token }) {
+    const user = await this.userRepository.exist({
+      field: 'email',
+      value: email,
+    });
+
+    if (user) {
+      const existToken = await this.ucodeRepository.validateToken({
+        email: email,
+        token: token,
+      });
+
+      if (existToken) {
+        return {
+          success: true,
+          message: 'OTP is valid',
         };
       } else {
         throw new UnauthorizedException('Invalid token');
