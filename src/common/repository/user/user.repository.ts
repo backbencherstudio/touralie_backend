@@ -435,6 +435,10 @@ export class UserRepository {
       throw new NotFoundException('User not found');
     }
 
+    if (existUser.email == appConfig().defaultUser.system.email) {
+      throw new BadRequestException('Super Admin cannot be deleted');
+    }
+
     await this.prisma.user.delete({
       where: {
         id: user_id,
