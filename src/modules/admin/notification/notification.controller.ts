@@ -23,7 +23,7 @@ import { Request } from 'express';
 
 import { QueryNotificationDto } from './dto/query-notification.dto';
 
-@ApiBearerAuth()
+@ApiBearerAuth('admin_token')
 @ApiTags('Notification')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
