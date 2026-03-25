@@ -34,7 +34,7 @@ export enum LibraryQueryStatus {
   ALL = 'ALL',
   DRAFT = 'DRAFT',
   UPLOADING = 'UPLOADING',
-  COMPLETED = 'COMPLETED',
+  PUBLISHED = 'PUBLISHED',
 }
 
 export class FiltersQueryDto {
