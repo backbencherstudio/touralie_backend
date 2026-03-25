@@ -50,10 +50,10 @@ This creates a "lead" that administrators can review to follow up with the user.
       },
     },
   })
-  @Post(':plan-id')
+  @Post(':planId')
   createMemberLeads(
     @Req() req: Request,
-    @Param('plan-id') planId: string,
+    @Param('planId') planId: string,
     @Body() createMemberLeadsDto: CreateMemberLeadsDto,
   ) {
     const user_id = req.user.userId;
