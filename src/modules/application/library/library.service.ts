@@ -298,18 +298,23 @@ export class LibraryService {
     const total = await this.prisma.watchHistory.count({ where });
 
     const formattedVideos = watchHistory.map((video) => ({
-      id: video.video.id,
-      title: video.video.title,
-      duration: video.video.duration,
-      level: video.video.level,
-      created_at: video.video.created_at,
-      is_completed: video.is_completed,
-      last_played_position: video.last_played_position,
-      thumbnail_url: video.video.thumbnail_url
-        ? SojebStorage.url(video.video.thumbnail_url)
+      id: video?.video?.id,
+      title: video?.video?.title,
+      duration: video?.video?.duration,
+      level: video?.video?.level,
+      created_at: video?.video?.created_at,
+      watch_status: video?.is_completed
+        ? 'COMPLETED'
+        : video?.last_played_position > 0
+          ? 'IN_PROGRESS'
+          : 'NOT_STARTED',
+      is_completed: video?.is_completed,
+      last_played_position: video?.last_played_position,
+      thumbnail_url: video?.video?.thumbnail_url
+        ? SojebStorage.url(video?.video?.thumbnail_url)
         : null,
-      category: video.video.category.title,
-      chapters_count: video.video._count.video_chapters,
+      category: video?.video?.category?.title,
+      chapters_count: video?.video?._count?.video_chapters,
     }));
 
     return {

@@ -90,7 +90,8 @@ If the authenticated user has personalization goals (e.g., "fat_loss") set in th
 
   @ApiOperation({
     summary: 'Get All Available Categories (Public)',
-    description: 'Retrieves a list of all video categories used in the library for filtering purposes.',
+    description:
+      'Retrieves a list of all video categories used in the library for filtering purposes.',
   })
   @ApiResponse({
     status: 200,
@@ -119,7 +120,8 @@ If the authenticated user has personalization goals (e.g., "fat_loss") set in th
 
   @ApiOperation({
     summary: 'Get My Favorite Videos (User Only)',
-    description: 'Returns a paginated list of videos that the user has marked as favorite.',
+    description:
+      'Returns a paginated list of videos that the user has marked as favorite.',
   })
   @ApiResponse({
     status: 200,
@@ -245,6 +247,7 @@ Use this before launching the video player.
           created_at: '2026-03-14T10:00:00.000Z',
           is_favorite: false,
           last_watch_position: 120,
+          watch_status: 'IN_PROGRESS',
           is_completed: false,
           url: 'https://example.com/storage/videos/workout.mp4',
           thumbnail_url: 'https://example.com/storage/videos/workout.jpg',
