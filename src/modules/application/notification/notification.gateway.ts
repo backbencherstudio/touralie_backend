@@ -49,9 +49,31 @@ export class NotificationGateway
       password: appConfig().redis.password,
     });
 
-    this.redisSubClient.subscribe('notification', (err, message: string) => {
-      const data = JSON.parse(message);
-      this.server.emit('receiveNotification', data);
+    this.redisSubClient.subscribe('notification', (err) => {
+      if (err) {
+        console.error('Failed to subscribe to notification channel', err);
+      }
+    });
+
+    this.redisSubClient.on('message', (channel, message) => {
+      if (channel === 'notification') {
+        const data = JSON.parse(message);
+        const receiverId = data.receiver_id || data.userId;
+        if (receiverId) {
+          // Send only to the specific user room
+          this.server.to(receiverId).emit('receiveNotification', {
+            success: true,
+            data: {
+              id: data.id,
+              title: data.title,
+              description: data.description,
+              type: data.type,
+              is_read: data.is_read || false,
+              created_at: data.created_at || new Date().toISOString(),
+            },
+          });
+        }
+      }
     });
   }
 
@@ -60,16 +82,15 @@ export class NotificationGateway
   }
 
   async handleConnection(client: Socket, ...args: any[]) {
-    // console.log('new connection!', client.id);
-    const userId = client.handshake.query.userId as string; // User ID passed as query parameter
+    const userId = client.handshake.query.userId as string;
     if (userId) {
+      client.join(userId);
       this.clients.set(userId, client.id);
-      console.log(`User ${userId} connected with socket ${client.id}`);
+      console.log(`User ${userId} connected and joined room ${userId}`);
     }
   }
 
   handleDisconnect(client: Socket) {
-    // console.log('client disconnected!', client.id);
     const userId = [...this.clients.entries()].find(
       ([, socketId]) => socketId === client.id,
     )?.[0];
@@ -79,26 +100,13 @@ export class NotificationGateway
     }
   }
 
-  // @SubscribeMessage('joinRoom')
-  // handleRoomJoin(client: Socket, room: string) {
-  //   client.join(room);
-  //   client.emit('joinedRoom', room);
-  // }
-
   @SubscribeMessage('sendNotification')
   async handleNotification(@MessageBody() data: any) {
-    console.log(`Received notification: ${JSON.stringify(data)}`);
-    // Broadcast notification to all clients
-    // this.server.emit('receiveNotification', data);
-
-    // Emit notification to specific client
-    const targetSocketId = this.clients.get(data.userId);
-    if (targetSocketId) {
+    console.log(`Received notification request: ${JSON.stringify(data)}`);
+    // data should contain receiver_id, title, description, type, etc.
+    const receiverId = data.receiver_id || data.userId;
+    if (receiverId) {
       await this.redisPubClient.publish('notification', JSON.stringify(data));
-
-      // console.log(`Notification sent to user ${data.userId}`);
-    } else {
-      // console.log(`User ${data.userId} not connected`);
     }
   }
 }

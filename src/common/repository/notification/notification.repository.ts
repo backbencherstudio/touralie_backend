@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import Redis from 'ioredis';
+
 @Injectable()
 export class NotificationRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectRedis() private readonly redis: Redis,
+  ) {}
   /**
    * Create a notification
    * @param sender_id - The ID of the user who fired the event
@@ -71,6 +77,20 @@ export class NotificationRepository {
         ...notificationData,
       },
     });
+
+    // Publish to Redis for WebSocket
+    if (receiver_id) {
+      const publishData = {
+        id: notification.id,
+        receiver_id: receiver_id,
+        title: title,
+        description: description,
+        type: type,
+        is_read: false,
+        created_at: notification.created_at,
+      };
+      await this.redis.publish('notification', JSON.stringify(publishData));
+    }
 
     return notification;
   }
