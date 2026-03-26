@@ -101,7 +101,7 @@ Optional fields:
   @ApiOperation({
     summary: 'Find one prescription (Admin Only)',
     description: `This endpoint allows administrators to find one prescription.
-    - patient-id param is required
+    - patientId param is required
     `,
   })
   @ApiResponse({
@@ -145,8 +145,8 @@ Optional fields:
       },
     },
   })
-  @Get(':patient-id')
-  findOnePrescription(@Param('patient-id') id: string) {
+  @Get(':patientId')
+  findOnePrescription(@Param('patientId') id: string) {
     return this.prescriptionService.findOnePrescription(id);
   }
 
