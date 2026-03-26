@@ -228,7 +228,7 @@ Authenticates a user and returns access and refresh tokens.
   })
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Req() req: Request, @Res() res: Response) {
+  async login(@Req() req: Request, @Res() res: Response, @Body() body: LoginDto) {
     const user_id = req.user.id;
 
     const user_email = req.user.email;
@@ -236,6 +236,7 @@ Authenticates a user and returns access and refresh tokens.
     const response = await this.authService.login({
       userId: user_id,
       email: user_email,
+      fcm_token: body.fcm_token,
     });
 
     // store to secure cookies

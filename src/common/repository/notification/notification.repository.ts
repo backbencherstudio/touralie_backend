@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
+import { PushNotificationService } from '../../lib/Notification/PushNotificationService';
 
 @Injectable()
 export class NotificationRepository {
@@ -90,6 +91,25 @@ export class NotificationRepository {
         created_at: notification.created_at,
       };
       await this.redis.publish('notification', JSON.stringify(publishData));
+
+      // Push Notification (FCM)
+      try {
+        const receiver = await this.prisma.user.findUnique({
+          where: { id: receiver_id },
+          select: { fcm_token: true, type: true },
+        });
+
+        if (receiver && receiver.type === 'user' && receiver.fcm_token) {
+          await PushNotificationService.sendNotification(
+            receiver.fcm_token,
+            title || 'New Notification',
+            description || '',
+            publishData,
+          );
+        }
+      } catch (pushError) {
+        console.error('Failed to send push notification:', pushError);
+      }
     }
 
     return notification;

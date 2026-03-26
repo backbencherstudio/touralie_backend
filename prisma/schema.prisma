@@ -71,6 +71,8 @@ model User {
   // billing id. e.g. stripe customer id
   billing_id String?
 
+  fcm_token String?
+
   type              String?   @default("user")
   email_verified_at DateTime?
 

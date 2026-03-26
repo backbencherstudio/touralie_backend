@@ -161,6 +161,15 @@ export class LoginDto {
     description: 'Password for the user account',
   })
   password: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
+    example: 'fcm_token_here',
+    description: 'FCM Token for push notifications (Optional)',
+    required: false,
+  })
+  fcm_token?: string;
 }
 export class ForgotPasswordDto {
   @IsNotEmpty()

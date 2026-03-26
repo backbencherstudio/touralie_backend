@@ -212,7 +212,7 @@ export class AuthService {
     }
   }
 
-  async login({ email, userId }) {
+  async login({ email, userId, fcm_token }: { email: string; userId: string; fcm_token?: string }) {
     const payload = { email: email, sub: userId };
 
     const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
@@ -222,6 +222,14 @@ export class AuthService {
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    // update fcm token if provided
+    if (fcm_token) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { fcm_token: fcm_token },
+      });
     }
 
     // store refreshToken

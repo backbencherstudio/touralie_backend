@@ -166,8 +166,8 @@ Optional fields:
       },
     },
   })
-  @Delete(':patient-id')
-  removePrescription(@Param('patient-id') id: string) {
+  @Delete(':patientId')
+  removePrescription(@Param('patientId') id: string) {
     return this.prescriptionService.removePrescription(id);
   }
 }

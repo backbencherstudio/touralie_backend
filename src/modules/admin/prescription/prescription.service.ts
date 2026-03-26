@@ -117,6 +117,9 @@ export class PrescriptionService {
           },
         },
       },
+      orderBy: {
+        created_at: 'desc',
+      },
       where,
       skip,
       take: limit,
