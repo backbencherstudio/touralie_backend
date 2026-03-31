@@ -1,6 +1,8 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { CreatePrescriptionDto } from './dto/create-prescription.dto';
-import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
+import {
+  CreatePrescriptionDto,
+  CreatePrescriptionTemplateDto,
+} from './dto/create-prescription.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PrescribedMembersQueryDto } from './dto/query-prescription.dto';
 import { Prisma } from 'prisma/generated/client';
@@ -20,14 +22,19 @@ export class PrescriptionService {
   async createPrescription(createPrescriptionDto: CreatePrescriptionDto) {
     const prescription = await this.prisma.prescription.create({
       data: {
-        instruction: {
-          create: {
-            description: createPrescriptionDto.instruction.description,
-            points: createPrescriptionDto.instruction.points,
-          },
-        },
+        title: createPrescriptionDto.title,
         videos: {
-          connect: createPrescriptionDto.video_ids.map((id) => ({ id })),
+          create: createPrescriptionDto.videos.map((video) => ({
+            video: {
+              connect: {
+                id: video.video_id,
+              },
+            },
+            reps: video.reps,
+            sets: video.sets,
+            weight: video.weight,
+            note: video.note,
+          })),
         },
         patients: {
           create: createPrescriptionDto.patient_ids.map((id) => ({
@@ -45,7 +52,7 @@ export class PrescriptionService {
 
     await this.activityRepository.createActivity(
       'New Prescription Created',
-      `A new prescription has been created with ${createPrescriptionDto.video_ids.length} videos for ${createPrescriptionDto.patient_ids.length} patients.`,
+      `A new prescription has been created with ${createPrescriptionDto.videos.length} videos for ${createPrescriptionDto.patient_ids.length} patients.`,
     );
 
     // Notify Patients
@@ -53,7 +60,7 @@ export class PrescriptionService {
       await this.notificationRepository.createNotification({
         receiver_id: patientId,
         title: 'New Prescription Assigned',
-        description: `A new prescription has been assigned to you with ${createPrescriptionDto.video_ids.length} videos.`,
+        description: `A new prescription has been assigned to you with ${createPrescriptionDto.videos.length} videos.`,
         type: 'blog',
       });
     }
@@ -61,7 +68,38 @@ export class PrescriptionService {
     return {
       success: true,
       message: 'Prescription created successfully',
-      data: prescription,
+    };
+  }
+
+  async createPrescriptionTemplate(
+    createPrescriptionTemplateDto: CreatePrescriptionTemplateDto,
+  ) {
+    const prescriptionTemplate = await this.prisma.prescriptionTemplate.create({
+      data: {
+        title: createPrescriptionTemplateDto.title,
+        videos: {
+          connect: createPrescriptionTemplateDto.video_ids.map((id) => ({
+            id,
+          })),
+        },
+      },
+    });
+
+    if (!prescriptionTemplate) {
+      throw new InternalServerErrorException(
+        'Failed to create prescription template',
+      );
+    }
+
+    await this.activityRepository.createActivity(
+      'New Prescription Template Created',
+      `A new prescription template has been created with ${createPrescriptionTemplateDto.video_ids.length} videos.`,
+    );
+
+    return {
+      success: true,
+      message: 'Prescription template created successfully',
+      data: prescriptionTemplate,
     };
   }
 
@@ -76,11 +114,12 @@ export class PrescriptionService {
       where.OR = [
         { user: { name: { contains: search, mode: 'insensitive' } } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
+        { prescription: { title: { contains: search, mode: 'insensitive' } } },
         {
           prescription: {
             videos: {
               some: {
-                title: { contains: search, mode: 'insensitive' },
+                video: { title: { contains: search, mode: 'insensitive' } },
               },
             },
           },
@@ -109,9 +148,11 @@ export class PrescriptionService {
         },
         prescription: {
           select: {
-            videos: {
+            title: true,
+            created_at: true,
+            _count: {
               select: {
-                title: true,
+                videos: true,
               },
             },
           },
@@ -134,13 +175,86 @@ export class PrescriptionService {
       user_id: patient.user.id,
       name: patient.user.name,
       email: patient.user.email,
-      videos: patient.prescription.videos.map((video) => video.title),
+      title: patient.prescription.title,
+      prescribed_at: patient.prescription.created_at,
+      total_videos: patient.prescription._count.videos,
     }));
 
     return {
       success: true,
       message: 'Prescription fetched successfully',
       data: formattedPatients,
+      meta_data: {
+        page,
+        limit,
+        total,
+        filters: {
+          start_date,
+          end_date,
+        },
+      },
+    };
+  }
+
+  async findAllPrescriptionTemplates(query: PrescribedMembersQueryDto) {
+    const { page, limit, search, start_date, end_date } = query;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.PrescriptionTemplateWhereInput = {};
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        {
+          videos: {
+            some: {
+              title: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
+      ];
+    }
+
+    if (start_date && end_date) {
+      where.created_at = {
+        gte: start_date,
+        lte: end_date,
+      };
+    }
+
+    const prescriptionTemplates =
+      await this.prisma.prescriptionTemplate.findMany({
+        where,
+
+        select: {
+          id: true,
+          title: true,
+          created_at: true,
+          _count: {
+            select: {
+              videos: true,
+            },
+          },
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+        skip,
+        take: limit,
+      });
+
+    const total = await this.prisma.prescriptionTemplate.count({
+      where,
+    });
+
+    return {
+      success: true,
+      message: 'Prescription templates fetched successfully',
+      data: prescriptionTemplates.map((prescriptionTemplate) => ({
+        ...prescriptionTemplate,
+        total_videos: prescriptionTemplate._count.videos,
+      })),
       meta_data: {
         page,
         limit,
@@ -170,33 +284,27 @@ export class PrescriptionService {
         prescription: {
           select: {
             id: true,
-            instruction: {
-              select: {
-                id: true,
-                description: true,
-                points: true,
-              },
-            },
+            title: true,
             videos: {
               select: {
                 id: true,
-                title: true,
-                description: true,
-                duration: true,
-                thumbnail_url: true,
-                url: true,
-                video_chapters: {
+                reps: true,
+                sets: true,
+                weight: true,
+                note: true,
+                video: {
                   select: {
                     id: true,
                     title: true,
-                    start_time: true,
-                    end_time: true,
+                    description: true,
+                    duration: true,
                     thumbnail_url: true,
-                  },
-                },
-                category: {
-                  select: {
-                    title: true,
+                    url: true,
+                    category: {
+                      select: {
+                        title: true,
+                      },
+                    },
                   },
                 },
               },
@@ -216,30 +324,23 @@ export class PrescriptionService {
       member_name: patient.user.name,
       member_email: patient.user.email,
       prescription_id: patient.prescription.id,
-      instruction: {
-        instruction_id: patient.prescription.instruction.id,
-        description: patient.prescription.instruction.description,
-        points: patient.prescription.instruction.points,
-      },
-      videos: patient.prescription.videos.map((video) => ({
+      title: patient.prescription.title,
+      total_videos: patient?.prescription?.videos?.length,
+      videos: patient?.prescription?.videos?.map((video) => ({
         video_id: video.id,
-        title: video.title,
-        description: video.description,
-        duration: video.duration,
-        thumbnail_url: video.thumbnail_url
-          ? SojebStorage.url(video.thumbnail_url)
+        reps: video.reps,
+        sets: video.sets,
+        weight: video.weight,
+        note: video.note,
+        title: video.video.title,
+        description: video.video.description,
+        duration: video.video.duration,
+        thumbnail_url: video.video.thumbnail_url
+          ? SojebStorage.url(video.video.thumbnail_url)
           : null,
-        url: video.url ? SojebStorage.url(video.url) : null,
-        video_chapters: video.video_chapters.map((chapter) => ({
-          id: chapter.id,
-          title: chapter.title,
-          start_time: chapter.start_time,
-          end_time: chapter.end_time,
-          thumbnail_url: (chapter as any).thumbnail_url
-            ? SojebStorage.url((chapter as any).thumbnail_url)
-            : null,
-        })),
-        category: video.category?.title,
+        url: video.video.url ? SojebStorage.url(video.video.url) : null,
+
+        category: video?.video?.category?.title,
       })),
     };
 
@@ -247,6 +348,103 @@ export class PrescriptionService {
       success: true,
       message: 'Prescription fetched successfully',
       data: formattedPatient,
+    };
+  }
+
+  async findOnePrescriptionTemplate(id: string) {
+    const prescriptionTemplate =
+      await this.prisma.prescriptionTemplate.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          id: true,
+          title: true,
+          videos: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              updated_at: true,
+              duration: true,
+              thumbnail_url: true,
+              url: true,
+              category: {
+                select: {
+                  title: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+    if (!prescriptionTemplate) {
+      throw new InternalServerErrorException(
+        'Failed to find prescription template',
+      );
+    }
+
+    const formattedPrescriptionTemplate = {
+      id: prescriptionTemplate.id,
+      title: prescriptionTemplate.title,
+      total_videos: prescriptionTemplate.videos.length,
+      videos: prescriptionTemplate.videos.map((video) => ({
+        video_id: video.id,
+        title: video.title,
+        description: video.description,
+        updated_at: video.updated_at,
+        duration: video.duration,
+        thumbnail_url: video.thumbnail_url
+          ? SojebStorage.url(video.thumbnail_url)
+          : null,
+        url: video.url ? SojebStorage.url(video.url) : null,
+        category: video.category?.title,
+      })),
+    };
+
+    return {
+      success: true,
+      message: 'Prescription template fetched successfully',
+      data: formattedPrescriptionTemplate,
+    };
+  }
+
+  async removePrescriptionTemplate(id: string) {
+    const prescriptionTemplate =
+      await this.prisma.prescriptionTemplate.findUnique({
+        where: {
+          id,
+        },
+      });
+
+    if (!prescriptionTemplate) {
+      throw new InternalServerErrorException(
+        'Failed to find prescription template',
+      );
+    }
+
+    const deletedPrescriptionTemplate =
+      await this.prisma.prescriptionTemplate.delete({
+        where: {
+          id: prescriptionTemplate.id,
+        },
+      });
+
+    if (!deletedPrescriptionTemplate) {
+      throw new InternalServerErrorException(
+        'Failed to delete prescription template',
+      );
+    }
+
+    await this.activityRepository.createActivity(
+      'Prescription Template Deleted',
+      `A prescription template "${deletedPrescriptionTemplate.title}" has been deleted.`,
+    );
+
+    return {
+      success: true,
+      message: 'Prescription template deleted successfully',
     };
   }
 

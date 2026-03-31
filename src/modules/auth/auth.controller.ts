@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Patch,
   Post,
+  Delete,
   Req,
   Res,
   UploadedFile,
@@ -228,7 +229,11 @@ Authenticates a user and returns access and refresh tokens.
   })
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Req() req: Request, @Res() res: Response, @Body() body: LoginDto) {
+  async login(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: LoginDto,
+  ) {
     const user_id = req.user.id;
 
     const user_email = req.user.email;
@@ -532,7 +537,7 @@ Reset password.
 Required fields:
 - email
 - token
-- password
+- password 
 `,
   })
   @ApiResponse({
@@ -774,4 +779,28 @@ Required fields:
     }
   }
   // --------- end 2FA ---------
+
+  @Delete('me')
+  @ApiOperation({
+    summary: 'Delete my account (User Only)',
+    description: `
+Delete my account.
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Account deleted successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Account deleted successfully',
+      },
+    },
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async deleteMyAccount(@Req() req: Request) {
+    const user_id = req.user.userId;
+    return await this.authService.deleteMyAccount(user_id);
+  }
 }

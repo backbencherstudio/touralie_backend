@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { VideoStatus, Level } from 'prisma/generated/enums';
+import { VideoStatus } from 'prisma/generated/enums';
 import { IsOptional, IsString, IsEnum, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -36,10 +36,10 @@ export class UpdateLibraryDto {
   @Type(() => Number)
   duration?: number;
 
-  @ApiProperty({ required: false, enum: Level, example: Level.BEGINNER })
-  @IsOptional()
-  @IsEnum(Level)
-  level?: Level;
+  // @ApiProperty({ required: false, enum: Level, example: Level.BEGINNER })
+  // @IsOptional()
+  // @IsEnum(Level)
+  // level?: Level;
 
   @ApiProperty({
     required: false,

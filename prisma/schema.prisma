@@ -478,11 +478,11 @@ model Category {
   @@map("categories")
 }
 
-enum Level {
-  BEGINNER
-  INTERMEDIATE
-  ADVANCE
-}
+// enum Level {
+//   BEGINNER
+//   INTERMEDIATE
+//   ADVANCE
+// }
 
 enum VideoStatus {
   UPLOADING
@@ -500,29 +500,29 @@ model Video {
   url           String?
   thumbnail_url String?
   description   String?
-  level         Level?
+  // level         Level?
   category_id   String?
   status        VideoStatus @default(UPLOADING)
   duration      Int? // in seconds
 
-  category        Category?       @relation(fields: [category_id], references: [id], onDelete: SetNull)
-  video_chapters  VideoChapters[]
-  prescriptions   Prescription[]
-  favorite_videos FavoriteVideo[]
-  watch_histories WatchHistory[]
+  category               Category?              @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  favorite_videos        FavoriteVideo[]
+  watch_histories        WatchHistory[]
+  prescription_videos    PrescriptionVideo[]
+  prescription_templates PrescriptionTemplate[]
 
   @@map("videos")
 }
 
-model VideoChapters {
-  id            String  @id @default(cuid())
-  title         String
-  start_time    String
-  end_time      String
-  thumbnail_url String?
-  video_id      String?
-  video         Video?  @relation(fields: [video_id], references: [id], onDelete: Cascade)
-}
+// model VideoChapters {
+//   id            String  @id @default(cuid())
+//   title         String
+//   start_time    String
+//   end_time      String
+//   thumbnail_url String?
+//   video_id      String?
+//   video         Video?  @relation(fields: [video_id], references: [id], onDelete: Cascade)
+// }
 
 model WatchHistory {
   id         String   @id @default(cuid())
@@ -540,17 +540,47 @@ model WatchHistory {
   @@map("watch_histories")
 }
 
+model PrescriptionTemplate {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  title  String
+  videos Video[]
+
+  @@map("prescription_templates")
+}
+
 model Prescription {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  videos      Video[]
-  instruction Instruction?
-  patients    Patient[]
+  title    String
+  videos   PrescriptionVideo[]
+  patients Patient[]
 
   @@map("prescriptions")
+}
+
+model PrescriptionVideo {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+
+  reps   String?
+  sets   String?
+  weight String?
+  note   String?
+
+  prescription_id String
+  video_id        String
+
+  prescription Prescription @relation(fields: [prescription_id], references: [id], onDelete: Cascade)
+  video        Video        @relation(fields: [video_id], references: [id], onDelete: Cascade)
+
+  @@map("prescription_videos")
 }
 
 model Patient {
@@ -568,20 +598,20 @@ model Patient {
   @@map("patients")
 }
 
-model Instruction {
-  id         String    @id @default(cuid())
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  deleted_at DateTime?
+// model Instruction {
+//   id         String    @id @default(cuid())
+//   created_at DateTime  @default(now())
+//   updated_at DateTime  @default(now())
+//   deleted_at DateTime?
 
-  description     String?
-  points          String[]
-  prescription_id String   @unique
+//   description     String?
+//   points          String[]
+//   prescription_id String   @unique
 
-  prescription Prescription @relation(fields: [prescription_id], references: [id], onDelete: Cascade)
+//   prescription Prescription @relation(fields: [prescription_id], references: [id], onDelete: Cascade)
 
-  @@map("instructions")
-}
+//   @@map("instructions")
+// }
 
 model FavoriteVideo {
   id         String   @id @default(cuid())

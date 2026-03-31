@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserByAdminDto } from './dto/update-user.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -10,6 +14,7 @@ import { QueryUserDto, UserStatus, UserType } from './dto/query-user.dto';
 import { Prisma } from 'prisma/generated/client';
 
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+import { Role } from 'src/common/guard/role/role.enum';
 
 @Injectable()
 export class UserService {
@@ -42,9 +47,32 @@ export class UserService {
     }
   }
 
-  async findAll(query: QueryUserDto) {
-    const { search, status, type, page, limit, start_date, end_date } = query;
+  async createPractitioner(createUserDto: CreateUserDto) {
+    await this.userRepository.createUser({
+      ...createUserDto,
+      type: Role.PRACTITIONER,
+      status: 1,
+      approved_at: DateHelper.now(),
+    });
+
+    return {
+      success: true,
+      message: 'Practitioner created successfully',
+    };
+  }
+
+  async findAll(query: QueryUserDto, user_id?: string) {
+    const { search, status, type, page, limit, start_date, end_date, role } =
+      query;
     const skip = (page - 1) * limit;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: user_id },
+    });
+    if (!user || (user.type !== 'admin' && user.type !== 'practitioner'))
+      throw new UnauthorizedException(
+        'You are not authorized to perform this action',
+      );
     const where: Prisma.UserWhereInput = {};
     if (search) {
       where['OR'] = [
@@ -74,6 +102,14 @@ export class UserService {
         gte: start_date,
         lte: end_date,
       };
+    }
+
+    if (user.type === 'admin') {
+      if (role && role !== 'all') {
+        where.type = role;
+      }
+    } else {
+      where.type = 'user';
     }
 
     const users = await this.prisma.user.findMany({

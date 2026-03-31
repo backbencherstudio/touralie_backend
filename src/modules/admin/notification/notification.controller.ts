@@ -26,7 +26,7 @@ import { QueryNotificationDto } from './dto/query-notification.dto';
 @ApiBearerAuth('admin_token')
 @ApiTags('Notification')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@Roles(Role.ADMIN, Role.PRACTITIONER)
 @Controller('admin/notification')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}

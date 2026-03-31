@@ -37,11 +37,9 @@ export class LibraryService {
         v.id,
         v.title,
         v.duration,
-        v.level,
         v.created_at,
         v.thumbnail_url,
         c.title as category_title,
-        (SELECT COUNT(*)::int FROM "VideoChapters" vc WHERE vc.video_id = v.id) as chapters_count,
         ${userId ? Prisma.sql`EXISTS(SELECT 1 FROM "FavoriteVideo" fv WHERE fv.video_id = v.id AND fv.user_id = ${userId})` : Prisma.sql`false`} as is_favorite
       FROM videos v
       LEFT JOIN categories c ON v.category_id = c.id
@@ -82,14 +80,12 @@ export class LibraryService {
       id: video.id ?? null,
       title: video.title ?? null,
       duration: video.duration ?? null,
-      level: video.level ?? null,
       created_at: video.created_at ?? null,
       is_favorite: video.is_favorite ?? false,
       thumbnail_url: video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
         : null,
       category: video.category_title ?? null,
-      chapters_count: video.chapters_count ?? 0,
     }));
 
     return {
@@ -167,15 +163,9 @@ export class LibraryService {
             id: true,
             title: true,
             duration: true,
-            level: true,
             created_at: true,
             thumbnail_url: true,
             category: true,
-            _count: {
-              select: {
-                video_chapters: true,
-              },
-            },
           },
         },
       },
@@ -192,14 +182,12 @@ export class LibraryService {
       id: video.video.id,
       title: video.video.title,
       duration: video.video.duration,
-      level: video.video.level,
       created_at: video.video.created_at,
       is_favorite: true,
       thumbnail_url: video.video.thumbnail_url
         ? SojebStorage.url(video.video.thumbnail_url)
         : null,
       category: video.video.category.title,
-      chapters_count: video.video._count.video_chapters,
     }));
 
     return {
@@ -276,15 +264,9 @@ export class LibraryService {
             id: true,
             title: true,
             duration: true,
-            level: true,
             created_at: true,
             thumbnail_url: true,
             category: true,
-            _count: {
-              select: {
-                video_chapters: true,
-              },
-            },
           },
         },
       },
@@ -301,7 +283,6 @@ export class LibraryService {
       id: video?.video?.id,
       title: video?.video?.title,
       duration: video?.video?.duration,
-      level: video?.video?.level,
       created_at: video?.video?.created_at,
       watch_status: video?.is_completed
         ? 'COMPLETED'
@@ -314,7 +295,6 @@ export class LibraryService {
         ? SojebStorage.url(video?.video?.thumbnail_url)
         : null,
       category: video?.video?.category?.title,
-      chapters_count: video?.video?._count?.video_chapters,
     }));
 
     return {
@@ -343,7 +323,6 @@ export class LibraryService {
         title: true,
         description: true,
         duration: true,
-        level: true,
         created_at: true,
         url: true,
         thumbnail_url: true,
@@ -351,15 +330,6 @@ export class LibraryService {
           select: {
             id: true,
             title: true,
-          },
-        },
-        video_chapters: {
-          select: {
-            id: true,
-            title: true,
-            start_time: true,
-            end_time: true,
-            thumbnail_url: true,
           },
         },
       },
@@ -387,6 +357,12 @@ export class LibraryService {
       if (watchHistory) {
         last_watch_position = watchHistory.last_played_position ?? 0;
         is_completed = watchHistory.is_completed;
+        await this.prisma.watchHistory.update({
+          where: { id: watchHistory.id },
+          data: {
+            updated_at: new Date(),
+          },
+        });
       } else {
         // Create initial watch history record
         await this.prisma.watchHistory.create({
@@ -405,7 +381,6 @@ export class LibraryService {
       title: video.title,
       description: video.description,
       duration: video.duration,
-      level: video.level,
       created_at: video.created_at,
       is_favorite,
       last_watch_position,
@@ -415,15 +390,6 @@ export class LibraryService {
         ? SojebStorage.url(video.thumbnail_url)
         : null,
       category: video.category?.title,
-      video_chapters: video.video_chapters.map((chapter) => ({
-        id: chapter.id,
-        title: chapter.title,
-        start_time: chapter.start_time,
-        end_time: chapter.end_time,
-        thumbnail_url: chapter.thumbnail_url
-          ? SojebStorage.url(chapter.thumbnail_url)
-          : null,
-      })),
     };
 
     return {

@@ -98,4 +98,14 @@ export class QueryUserDto extends IntersectionType(
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiProperty({
+    description: 'User role',
+    enum: ['all', 'practitioner', 'user', 'admin'],
+    example: 'all',
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(['all', 'practitioner', 'user', 'admin'])
+  role: 'all' | 'practitioner' | 'user' | 'admin' = 'all';
 }

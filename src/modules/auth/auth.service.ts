@@ -212,7 +212,15 @@ export class AuthService {
     }
   }
 
-  async login({ email, userId, fcm_token }: { email: string; userId: string; fcm_token?: string }) {
+  async login({
+    email,
+    userId,
+    fcm_token,
+  }: {
+    email: string;
+    userId: string;
+    fcm_token?: string;
+  }) {
     const payload = { email: email, sub: userId };
 
     const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
@@ -386,7 +394,7 @@ export class AuthService {
           receiver_id: admin.id,
           title: 'New User Registered',
           description: `A new user ${name} (${email}) has registered on the platform.`,
-          type: 'package', 
+          type: 'package',
         });
       }
     }
@@ -803,4 +811,17 @@ export class AuthService {
     }
   }
   // --------- end 2FA ---------
+
+  async deleteMyAccount(user_id: string) {
+    const user = await this.userRepository.getUserDetails(user_id);
+    if (user) {
+      await this.userRepository.deleteUser(user_id);
+      return {
+        success: true,
+        message: 'Account deleted successfully',
+      };
+    } else {
+      throw new NotFoundException('User not found');
+    }
+  }
 }

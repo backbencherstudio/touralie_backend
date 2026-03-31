@@ -196,6 +196,8 @@ export class UserRepository {
     personalization,
     role_id = null,
     type = 'user',
+    status,
+    approved_at,
   }: {
     name?: string;
     first_name?: string;
@@ -210,98 +212,95 @@ export class UserRepository {
     phone_number?: string;
     role_id?: string;
     type?: string;
+    status?: number;
+    approved_at?: Date;
   }) {
-    try {
-      const data = {};
-      if (name) {
-        data['name'] = name;
-      }
-      if (first_name) {
-        data['first_name'] = first_name;
-      }
-      if (last_name) {
-        data['last_name'] = last_name;
-      }
-      if (phone_number) {
-        data['phone_number'] = phone_number;
-      }
-      if (weight) {
-        data['weight'] = weight;
-      }
-      if (height) {
-        data['height'] = height;
-      }
-      if (gender) {
-        data['gender'] = gender;
-      }
-      if (date_of_birth) {
-        data['date_of_birth'] = date_of_birth;
-      }
-      if (personalization) {
-        data['personalization'] = personalization;
-      }
-      if (email) {
-        // Check if email already exist
-        const userEmailExist = await this.exist({
-          field: 'email',
-          value: String(email),
-        });
-
-        if (userEmailExist) {
-          return {
-            success: false,
-            message: 'Email already exist',
-          };
-        }
-
-        data['email'] = email;
-      }
-      if (password) {
-        data['password'] = await bcrypt.hash(
-          password,
-          appConfig().security.salt,
-        );
-      }
-
-      if (type && ArrayHelper.inArray(type, Object.values(Role))) {
-        data['type'] = type;
-
-        // if (type == Role.VENDOR) {
-        //   data['approved_at'] = DateHelper.now();
-        // }
-      }
-
-      const user = await this.prisma.user.create({
-        data: {
-          ...data,
-        },
+    const data = {};
+    if (name) {
+      data['name'] = name;
+    }
+    if (first_name) {
+      data['first_name'] = first_name;
+    }
+    if (last_name) {
+      data['last_name'] = last_name;
+    }
+    if (phone_number) {
+      data['phone_number'] = phone_number;
+    }
+    if (weight) {
+      data['weight'] = weight;
+    }
+    if (height) {
+      data['height'] = height;
+    }
+    if (gender) {
+      data['gender'] = gender;
+    }
+    if (date_of_birth) {
+      data['date_of_birth'] = date_of_birth;
+    }
+    if (personalization) {
+      data['personalization'] = personalization;
+    }
+    if (email) {
+      // Check if email already exist
+      const userEmailExist = await this.exist({
+        field: 'email',
+        value: String(email),
       });
 
-      if (user) {
-        if (role_id) {
-          // attach role
-          await this.attachRole({
-            user_id: user.id,
-            role_id: role_id,
-          });
-        }
-
-        return {
-          success: true,
-          message: 'User created successfully',
-          data: user,
-        };
-      } else {
+      if (userEmailExist) {
         return {
           success: false,
-          message: 'User creation failed',
+          message: 'Email already exist',
         };
       }
-    } catch (error) {
+
+      data['email'] = email;
+    }
+    if (password) {
+      data['password'] = await bcrypt.hash(password, appConfig().security.salt);
+    }
+
+    if (type && ArrayHelper.inArray(type, Object.values(Role))) {
+      data['type'] = type;
+
+      // if (type == Role.VENDOR) {
+      //   data['approved_at'] = DateHelper.now();
+      // }
+    }
+
+    if (status) {
+      data['status'] = status;
+    }
+
+    if (approved_at) {
+      data['approved_at'] = approved_at;
+    }
+
+    const user = await this.prisma.user.create({
+      data: {
+        ...data,
+      },
+    });
+
+    if (user) {
+      if (role_id) {
+        // attach role
+        await this.attachRole({
+          user_id: user.id,
+          role_id: role_id,
+        });
+      }
+
       return {
-        success: false,
-        message: error.message,
+        success: true,
+        message: 'User created successfully',
+        data: user,
       };
+    } else {
+      throw new Error('User creation failed');
     }
   }
 

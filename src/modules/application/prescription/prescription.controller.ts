@@ -46,13 +46,9 @@ export class PrescriptionController {
               title: { type: 'string' },
               thumbnail_url: { type: 'string' },
               watch_status: { type: 'string' },
-              category: { type: 'string' },
-              chapters_count: { type: 'number' },
+              total_videos: { type: 'number' },
+              total_completed_videos: { type: 'number' },
               created_at: { type: 'string' },
-              duration: { type: 'number' },
-              level: { type: 'string' },
-              is_completed: { type: 'boolean' },
-              last_watch_position: { type: 'number' },
             },
           },
         },
@@ -91,24 +87,15 @@ export class PrescriptionController {
           type: 'object',
           nullable: true,
           properties: {
-            id: { type: 'string' },
-            title: { type: 'string' },
-            description: { type: 'string' },
-            url: { type: 'string' },
-            thumbnail_url: { type: 'string' },
-            category: { type: 'string' },
-            duration: { type: 'number' },
-            level: { type: 'string' },
-            is_completed: { type: 'boolean' },
-            last_watch_position: { type: 'number' },
+            video_id: { type: 'string' },
+            prescription_title: { type: 'string' },
+            video_title: { type: 'string' },
+            video_thumbnail: { type: 'string' },
+            video_duration: { type: 'number' },
+            total_videos: { type: 'number' },
             watch_status: { type: 'string' },
-            instruction: {
-              type: 'object',
-              properties: {
-                description: { type: 'string' },
-                points: { type: 'array', items: { type: 'string' } },
-              },
-            },
+            progress: { type: 'number' },
+            progress_message: { type: 'string' },
           },
         },
       },
@@ -118,5 +105,57 @@ export class PrescriptionController {
   async getResumeVideo(@Req() req: Request) {
     const { userId } = req?.user as any;
     return this.prescriptionService.lastPlayedPrescriptionVideo(userId);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get a single prescription (User Only)',
+    description:
+      'Returns a single prescription with all its videos and their details.',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Prescription found successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            title: { type: 'string' },
+            created_at: { type: 'string' },
+            videos: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  reps: { type: 'number' },
+                  sets: { type: 'number' },
+                  weight: { type: 'number' },
+                  note: { type: 'string' },
+                  title: { type: 'string' },
+                  description: { type: 'string' },
+                  url: { type: 'string' },
+                  thumbnail_url: { type: 'string' },
+                  category: { type: 'string' },
+                  last_played_position: { type: 'number' },
+                  is_completed: { type: 'boolean' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  findOnePrescription(@Param('id') id: string, @Req() req: Request) {
+    const { userId } = req?.user as any;
+    return this.prescriptionService.findOnePrescription(id, userId);
   }
 }

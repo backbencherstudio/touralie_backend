@@ -235,7 +235,6 @@ export class LibraryService {
         id: true,
         title: true,
         duration: true,
-        level: true,
         created_at: true,
         thumbnail_url: true,
         status: true,
@@ -243,11 +242,6 @@ export class LibraryService {
           select: {
             id: true,
             title: true,
-          },
-        },
-        _count: {
-          select: {
-            video_chapters: true,
           },
         },
       },
@@ -265,14 +259,12 @@ export class LibraryService {
       id: video.id,
       title: video.title,
       duration: video.duration,
-      level: video.level,
       created_at: video.created_at,
       status: video.status,
       thumbnail_url: video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
         : null,
       category: video.category?.title,
-      chapters_count: video._count.video_chapters,
     }));
 
     return {
@@ -297,9 +289,20 @@ export class LibraryService {
   async findOne(id: string) {
     const video = await this.prisma.video.findUnique({
       where: { id },
-      include: {
-        category: true,
-        video_chapters: true,
+      select: {
+        id: true,
+        title: true,
+        duration: true,
+        description: true,
+        url: true,
+        thumbnail_url: true,
+        status: true,
+        category: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
     });
 
@@ -308,15 +311,6 @@ export class LibraryService {
       video.thumbnail_url = video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
         : null;
-
-      if (video.video_chapters) {
-        video.video_chapters = video.video_chapters.map((chapter) => ({
-          ...chapter,
-          thumbnail_url: chapter.thumbnail_url
-            ? SojebStorage.url(chapter.thumbnail_url)
-            : null,
-        })) as any;
-      }
     }
 
     return {
@@ -377,13 +371,35 @@ export class LibraryService {
       'Video Updated',
       `Video "${video.title}" metadata has been updated.`,
     );
+    const updatedVideo = await this.prisma.video.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        title: true,
+        duration: true,
+        description: true,
+        url: true,
+        thumbnail_url: true,
+        status: true,
+        category: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
     return {
       success: true,
       message: 'Video updated successfully',
-      data: await this.prisma.video.update({
-        where: { id },
-        data,
-      }),
+      data: {
+        ...updatedVideo,
+        url: updatedVideo.url ? SojebStorage.url(updatedVideo.url) : null,
+        thumbnail_url: updatedVideo.thumbnail_url
+          ? SojebStorage.url(updatedVideo.thumbnail_url)
+          : null,
+      },
     };
   }
 
@@ -436,187 +452,187 @@ export class LibraryService {
     };
   }
 
-  async addChapter(
-    videoId: string,
-    chapterData: CreateChapterDto,
-    thumbnail?: Express.Multer.File,
-  ) {
-    const video = await this.prisma.video.findUnique({
-      where: { id: videoId },
-    });
-    if (!video) throw new Error('Video not found');
-    if (video.status === VideoStatus.UPLOADING) {
-      throw new Error('Cannot add chapters while video is uploading.');
-    }
+  // async addChapter(
+  //   videoId: string,
+  //   chapterData: CreateChapterDto,
+  //   thumbnail?: Express.Multer.File,
+  // ) {
+  //   const video = await this.prisma.video.findUnique({
+  //     where: { id: videoId },
+  //   });
+  //   if (!video) throw new Error('Video not found');
+  //   if (video.status === VideoStatus.UPLOADING) {
+  //     throw new Error('Cannot add chapters while video is uploading.');
+  //   }
 
-    await this.validateChapterOverlap(
-      videoId,
-      chapterData.start_time,
-      chapterData.end_time,
-    );
+  //   await this.validateChapterOverlap(
+  //     videoId,
+  //     chapterData.start_time,
+  //     chapterData.end_time,
+  //   );
 
-    let thumbnailUrl = null;
-    if (thumbnail) {
-      const thumbExtension = thumbnail.originalname.split('.').pop();
-      thumbnailUrl = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(
-        thumbnailUrl,
-        thumbnail.buffer,
-        thumbnail.mimetype,
-      );
-    }
+  //   let thumbnailUrl = null;
+  //   if (thumbnail) {
+  //     const thumbExtension = thumbnail.originalname.split('.').pop();
+  //     thumbnailUrl = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
+  //     await SojebStorage.put(
+  //       thumbnailUrl,
+  //       thumbnail.buffer,
+  //       thumbnail.mimetype,
+  //     );
+  //   }
 
-    const { thumbnail: _, ...rest } = chapterData;
+  //   const { thumbnail: _, ...rest } = chapterData;
 
-    return {
-      success: true,
-      message: 'Chapter added successfully',
-      data: await this.prisma.videoChapters.create({
-        data: {
-          ...rest,
-          thumbnail_url: thumbnailUrl,
-          video_id: videoId,
-        },
-      }),
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Chapter added successfully',
+  //     data: await this.prisma.videoChapters.create({
+  //       data: {
+  //         ...rest,
+  //         thumbnail_url: thumbnailUrl,
+  //         video_id: videoId,
+  //       },
+  //     }),
+  //   };
+  // }
 
-  async updateChapter(
-    chapterId: string,
-    chapterData: UpdateChapterDtoLocal,
-    thumbnail?: Express.Multer.File,
-  ) {
-    const chapter = await this.prisma.videoChapters.findUnique({
-      where: { id: chapterId },
-      include: { video: true },
-    });
-    if (!chapter) throw new Error('Chapter not found');
-    if (chapter.video?.status === VideoStatus.UPLOADING) {
-      throw new Error('Cannot update chapters while video is uploading.');
-    }
+  // async updateChapter(
+  //   chapterId: string,
+  //   chapterData: UpdateChapterDtoLocal,
+  //   thumbnail?: Express.Multer.File,
+  // ) {
+  //   const chapter = await this.prisma.videoChapters.findUnique({
+  //     where: { id: chapterId },
+  //     include: { video: true },
+  //   });
+  //   if (!chapter) throw new Error('Chapter not found');
+  //   if (chapter.video?.status === VideoStatus.UPLOADING) {
+  //     throw new Error('Cannot update chapters while video is uploading.');
+  //   }
 
-    await this.validateChapterOverlap(
-      chapter.video_id,
-      chapterData.start_time || chapter.start_time,
-      chapterData.end_time || chapter.end_time,
-      chapterId,
-    );
+  //   await this.validateChapterOverlap(
+  //     chapter.video_id,
+  //     chapterData.start_time || chapter.start_time,
+  //     chapterData.end_time || chapter.end_time,
+  //     chapterId,
+  //   );
 
-    const data: any = { ...chapterData };
+  //   const data: any = { ...chapterData };
 
-    if (thumbnail) {
-      if (chapter.thumbnail_url) {
-        try {
-          await SojebStorage.delete(chapter.thumbnail_url);
-        } catch (e) {}
-      }
-      const thumbExtension = thumbnail.originalname.split('.').pop();
-      const thumbnailUrl = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(
-        thumbnailUrl,
-        thumbnail.buffer,
-        thumbnail.mimetype,
-      );
-      data.thumbnail_url = thumbnailUrl;
-    }
+  //   if (thumbnail) {
+  //     if (chapter.thumbnail_url) {
+  //       try {
+  //         await SojebStorage.delete(chapter.thumbnail_url);
+  //       } catch (e) {}
+  //     }
+  //     const thumbExtension = thumbnail.originalname.split('.').pop();
+  //     const thumbnailUrl = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
+  //     await SojebStorage.put(
+  //       thumbnailUrl,
+  //       thumbnail.buffer,
+  //       thumbnail.mimetype,
+  //     );
+  //     data.thumbnail_url = thumbnailUrl;
+  //   }
 
-    delete data.thumbnail;
+  //   delete data.thumbnail;
 
-    return {
-      success: true,
-      message: 'Chapter updated successfully',
-      data: await this.prisma.videoChapters.update({
-        where: { id: chapterId },
-        data,
-      }),
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Chapter updated successfully',
+  //     data: await this.prisma.videoChapters.update({
+  //       where: { id: chapterId },
+  //       data,
+  //     }),
+  //   };
+  // }
 
-  async removeChapter(chapterId: string) {
-    const chapter = await this.prisma.videoChapters.findUnique({
-      where: { id: chapterId },
-      include: { video: true },
-    });
-    if (!chapter) throw new Error('Chapter not found');
-    if (chapter.video?.status === VideoStatus.UPLOADING) {
-      throw new Error('Cannot remove chapters while video is uploading.');
-    }
+  // async removeChapter(chapterId: string) {
+  //   const chapter = await this.prisma.videoChapters.findUnique({
+  //     where: { id: chapterId },
+  //     include: { video: true },
+  //   });
+  //   if (!chapter) throw new Error('Chapter not found');
+  //   if (chapter.video?.status === VideoStatus.UPLOADING) {
+  //     throw new Error('Cannot remove chapters while video is uploading.');
+  //   }
 
-    // Delete chapter thumbnail
-    if (chapter.thumbnail_url) {
-      try {
-        await SojebStorage.delete(chapter.thumbnail_url);
-      } catch (e) {}
-    }
+  //   // Delete chapter thumbnail
+  //   if (chapter.thumbnail_url) {
+  //     try {
+  //       await SojebStorage.delete(chapter.thumbnail_url);
+  //     } catch (e) {}
+  //   }
 
-    return {
-      success: true,
-      message: 'Chapter deleted successfully',
-      data: await this.prisma.videoChapters.delete({
-        where: { id: chapterId },
-      }),
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Chapter deleted successfully',
+  //     data: await this.prisma.videoChapters.delete({
+  //       where: { id: chapterId },
+  //     }),
+  //   };
+  // }
 
-  async getChapters(videoId: string) {
-    const chapters = await this.prisma.videoChapters.findMany({
-      where: { video_id: videoId },
-      orderBy: { start_time: 'asc' },
-    });
+  // async getChapters(videoId: string) {
+  //   const chapters = await this.prisma.videoChapters.findMany({
+  //     where: { video_id: videoId },
+  //     orderBy: { start_time: 'asc' },
+  //   });
 
-    const formattedChapters = chapters.map((chapter) => ({
-      ...chapter,
-      thumbnail_url: chapter.thumbnail_url
-        ? SojebStorage.url(chapter.thumbnail_url)
-        : null,
-    }));
+  //   const formattedChapters = chapters.map((chapter) => ({
+  //     ...chapter,
+  //     thumbnail_url: chapter.thumbnail_url
+  //       ? SojebStorage.url(chapter.thumbnail_url)
+  //       : null,
+  //   }));
 
-    return {
-      success: true,
-      message: 'Chapters fetched successfully',
-      data: formattedChapters,
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Chapters fetched successfully',
+  //     data: formattedChapters,
+  //   };
+  // }
 
-  private async validateChapterOverlap(
-    videoId: string,
-    startTime: string,
-    endTime: string,
-    currentChapterId?: string,
-  ) {
-    const chapters = await this.prisma.videoChapters.findMany({
-      where: {
-        video_id: videoId,
-        id: currentChapterId ? { not: currentChapterId } : undefined,
-      },
-    });
+  // private async validateChapterOverlap(
+  //   videoId: string,
+  //   startTime: string,
+  //   endTime: string,
+  //   currentChapterId?: string,
+  // ) {
+  //   const chapters = await this.prisma.videoChapters.findMany({
+  //     where: {
+  //       video_id: videoId,
+  //       id: currentChapterId ? { not: currentChapterId } : undefined,
+  //     },
+  //   });
 
-    const newStart = this.timeToSeconds(startTime);
-    const newEnd = this.timeToSeconds(endTime);
+  //   const newStart = this.timeToSeconds(startTime);
+  //   const newEnd = this.timeToSeconds(endTime);
 
-    for (const chapter of chapters) {
-      const existingStart = this.timeToSeconds(chapter.start_time);
-      const existingEnd = this.timeToSeconds(chapter.end_time);
+  //   for (const chapter of chapters) {
+  //     const existingStart = this.timeToSeconds(chapter.start_time);
+  //     const existingEnd = this.timeToSeconds(chapter.end_time);
 
-      if (
-        (newStart >= existingStart && newStart < existingEnd) ||
-        (newEnd > existingStart && newEnd <= existingEnd) ||
-        (newStart <= existingStart && newEnd >= existingEnd)
-      ) {
-        throw new Error('Chapter time overlaps with an existing chapter');
-      }
-    }
-  }
+  //     if (
+  //       (newStart >= existingStart && newStart < existingEnd) ||
+  //       (newEnd > existingStart && newEnd <= existingEnd) ||
+  //       (newStart <= existingStart && newEnd >= existingEnd)
+  //     ) {
+  //       throw new Error('Chapter time overlaps with an existing chapter');
+  //     }
+  //   }
+  // }
 
-  private timeToSeconds(time: string): number {
-    const parts = time.split(':').map(Number);
-    if (parts.length === 3) {
-      return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    } else if (parts.length === 2) {
-      return parts[0] * 60 + parts[1];
-    }
-    return Number(time);
-  }
+  // private timeToSeconds(time: string): number {
+  //   const parts = time.split(':').map(Number);
+  //   if (parts.length === 3) {
+  //     return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  //   } else if (parts.length === 2) {
+  //     return parts[0] * 60 + parts[1];
+  //   }
+  //   return Number(time);
+  // }
 
   private getContentType(filename: string): string {
     const extension = filename.split('.').pop()?.toLowerCase();

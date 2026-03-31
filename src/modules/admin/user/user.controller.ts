@@ -48,6 +48,12 @@ export class UserController {
     }
   }
 
+  @Post('create_practitioner')
+  async createPractitioner(@Body() createUserDto: CreateUserDto) {
+    const user = await this.userService.createPractitioner(createUserDto);
+    return user;
+  }
+  @Roles(Role.PRACTITIONER)
   @ApiOperation({
     summary: 'Retrieve List of All Users (Admin Only)',
     description: `

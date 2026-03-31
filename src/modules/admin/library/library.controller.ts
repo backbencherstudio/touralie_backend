@@ -38,7 +38,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 @ApiTags('Library')
 @ApiBearerAuth('admin_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@Roles(Role.ADMIN, Role.PRACTITIONER)
 @Controller('admin/library')
 export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
@@ -274,10 +274,8 @@ export class LibraryController {
               thumbnail_url: { type: 'string' },
               status: { type: 'string' },
               category: { type: 'string' },
-              chapters_count: { type: 'number' },
               created_at: { type: 'string' },
               duration: { type: 'number' },
-              level: { type: 'string' },
             },
           },
         },
@@ -323,6 +321,8 @@ export class LibraryController {
           properties: {
             id: { type: 'string' },
             title: { type: 'string' },
+            description: { type: 'string' },
+            duration: { type: 'number' },
             url: { type: 'string' },
             thumbnail_url: { type: 'string' },
             status: { type: 'string' },
@@ -434,152 +434,152 @@ export class LibraryController {
     return this.libraryService.remove(id);
   }
 
-  @ApiOperation({
-    summary: 'Add chapter to video (Admin Only)',
-    description:
-      'Adds a new time-mark chapter. Requires start_time and end_time. Thumbnails are uploaded as files. Overlap with existing chapters is validated.',
-  })
-  @ApiResponse({
-    status: 201,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Chapter added successfully' },
-        data: { type: 'object' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: false },
-        message: {
-          type: 'string',
-          example: 'Bad Request - Validation or Overlap error',
-        },
-      },
-    },
-  })
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('thumbnail', { storage: memoryStorage() }))
-  @Post(':id/chapters')
-  addChapter(
-    @Param('id') id: string,
-    @Body() chapterData: CreateChapterDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
-          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
-        ],
-        fileIsRequired: false,
-      }),
-    )
-    thumbnail?: Express.Multer.File,
-  ) {
-    return this.libraryService.addChapter(id, chapterData, thumbnail);
-  }
+  // @ApiOperation({
+  //   summary: 'Add chapter to video (Admin Only)',
+  //   description:
+  //     'Adds a new time-mark chapter. Requires start_time and end_time. Thumbnails are uploaded as files. Overlap with existing chapters is validated.',
+  // })
+  // @ApiResponse({
+  //   status: 201,
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       success: { type: 'boolean', example: true },
+  //       message: { type: 'string', example: 'Chapter added successfully' },
+  //       data: { type: 'object' },
+  //     },
+  //   },
+  // })
+  // @ApiResponse({
+  //   status: 400,
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       success: { type: 'boolean', example: false },
+  //       message: {
+  //         type: 'string',
+  //         example: 'Bad Request - Validation or Overlap error',
+  //       },
+  //     },
+  //   },
+  // })
+  // @ApiConsumes('multipart/form-data')
+  // @UseInterceptors(FileInterceptor('thumbnail', { storage: memoryStorage() }))
+  // @Post(':id/chapters')
+  // addChapter(
+  //   @Param('id') id: string,
+  //   @Body() chapterData: CreateChapterDto,
+  //   @UploadedFile(
+  //     new ParseFilePipe({
+  //       validators: [
+  //         new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
+  //         new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+  //       ],
+  //       fileIsRequired: false,
+  //     }),
+  //   )
+  //   thumbnail?: Express.Multer.File,
+  // ) {
+  //   return this.libraryService.addChapter(id, chapterData, thumbnail);
+  // }
 
-  @ApiOperation({
-    summary: 'Get chapters of a video (Admin Only)',
-    description: 'Returns list of chapters sorted by start time.',
-  })
-  @ApiResponse({
-    status: 200,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Chapters fetched successfully' },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              title: { type: 'string' },
-              start_time: { type: 'string' },
-              end_time: { type: 'string' },
-              thumbnail_url: { type: 'string' },
-            },
-          },
-        },
-      },
-    },
-  })
-  @Get(':id/chapters')
-  getChapters(@Param('id') id: string) {
-    return this.libraryService.getChapters(id);
-  }
+  // @ApiOperation({
+  //   summary: 'Get chapters of a video (Admin Only)',
+  //   description: 'Returns list of chapters sorted by start time.',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       success: { type: 'boolean', example: true },
+  //       message: { type: 'string', example: 'Chapters fetched successfully' },
+  //       data: {
+  //         type: 'array',
+  //         items: {
+  //           type: 'object',
+  //           properties: {
+  //             id: { type: 'string' },
+  //             title: { type: 'string' },
+  //             start_time: { type: 'string' },
+  //             end_time: { type: 'string' },
+  //             thumbnail_url: { type: 'string' },
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  // })
+  // @Get(':id/chapters')
+  // getChapters(@Param('id') id: string) {
+  //   return this.libraryService.getChapters(id);
+  // }
 
-  @ApiOperation({
-    summary: 'Update chapter (Admin Only)',
-    description: 'Updates chapter metadata or thumbnail file.',
-  })
-  @ApiResponse({
-    status: 200,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Chapter updated successfully' },
-        data: { type: 'object' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: false },
-        message: {
-          type: 'string',
-          example: 'Bad Request - Validation or Overlap error',
-        },
-      },
-    },
-  })
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('thumbnail', { storage: memoryStorage() }))
-  @Patch('chapters/:chapterId')
-  updateChapter(
-    @Param('chapterId') chapterId: string,
-    @Body() chapterData: UpdateChapterDtoLocal,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
-          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
-        ],
-        fileIsRequired: false,
-      }),
-    )
-    thumbnail?: Express.Multer.File,
-  ) {
-    return this.libraryService.updateChapter(chapterId, chapterData, thumbnail);
-  }
+  // @ApiOperation({
+  //   summary: 'Update chapter (Admin Only)',
+  //   description: 'Updates chapter metadata or thumbnail file.',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       success: { type: 'boolean', example: true },
+  //       message: { type: 'string', example: 'Chapter updated successfully' },
+  //       data: { type: 'object' },
+  //     },
+  //   },
+  // })
+  // @ApiResponse({
+  //   status: 400,
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       success: { type: 'boolean', example: false },
+  //       message: {
+  //         type: 'string',
+  //         example: 'Bad Request - Validation or Overlap error',
+  //       },
+  //     },
+  //   },
+  // })
+  // @ApiConsumes('multipart/form-data')
+  // @UseInterceptors(FileInterceptor('thumbnail', { storage: memoryStorage() }))
+  // @Patch('chapters/:chapterId')
+  // updateChapter(
+  //   @Param('chapterId') chapterId: string,
+  //   @Body() chapterData: UpdateChapterDtoLocal,
+  //   @UploadedFile(
+  //     new ParseFilePipe({
+  //       validators: [
+  //         new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
+  //         new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+  //       ],
+  //       fileIsRequired: false,
+  //     }),
+  //   )
+  //   thumbnail?: Express.Multer.File,
+  // ) {
+  //   return this.libraryService.updateChapter(chapterId, chapterData, thumbnail);
+  // }
 
-  @ApiOperation({
-    summary: 'Remove chapter (Admin Only)',
-    description: 'Permanently deletes a specific chapter.',
-  })
-  @ApiResponse({
-    status: 200,
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Chapter deleted successfully' },
-        data: { type: 'object' },
-      },
-    },
-  })
-  @Delete('chapters/:chapterId')
-  removeChapter(@Param('chapterId') chapterId: string) {
-    return this.libraryService.removeChapter(chapterId);
-  }
+  // @ApiOperation({
+  //   summary: 'Remove chapter (Admin Only)',
+  //   description: 'Permanently deletes a specific chapter.',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       success: { type: 'boolean', example: true },
+  //       message: { type: 'string', example: 'Chapter deleted successfully' },
+  //       data: { type: 'object' },
+  //     },
+  //   },
+  // })
+  // @Delete('chapters/:chapterId')
+  // removeChapter(@Param('chapterId') chapterId: string) {
+  //   return this.libraryService.removeChapter(chapterId);
+  // }
 }

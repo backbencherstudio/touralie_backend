@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsString, IsEnum, IsOptional, IsNumber } from 'class-validator';
-import { Level } from 'prisma/generated/enums';
+import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateLibraryDto {
   @ApiProperty({
@@ -62,13 +61,4 @@ export class CreateLibraryDto {
   @Type(() => Number)
   @IsNumber()
   duration?: number;
-
-  @ApiProperty({
-    description: 'Level of the library',
-    example: 'BEGINNER',
-    required: false,
-  })
-  @IsOptional()
-  @IsEnum(Level)
-  level?: Level = Level.BEGINNER;
 }

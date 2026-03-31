@@ -17,7 +17,7 @@ import {
 @ApiBearerAuth('admin_token')
 @ApiTags('Overview')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@Roles(Role.ADMIN, Role.PRACTITIONER)
 @Controller('admin/overview')
 export class OverviewController {
   constructor(private readonly overviewService: OverviewService) {}
