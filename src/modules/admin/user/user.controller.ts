@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  Request,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -28,11 +29,11 @@ import { QueryUserDto } from './dto/query-user.dto';
 @ApiBearerAuth('admin_token')
 @ApiTags('User')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
 @Controller('admin/user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Roles(Role.ADMIN)
   @ApiExcludeEndpoint()
   @ApiResponse({ description: 'Create a user' })
   @Post()
@@ -48,12 +49,13 @@ export class UserController {
     }
   }
 
+  @Roles(Role.ADMIN)
   @Post('create_practitioner')
   async createPractitioner(@Body() createUserDto: CreateUserDto) {
     const user = await this.userService.createPractitioner(createUserDto);
     return user;
   }
-  @Roles(Role.PRACTITIONER)
+  @Roles(Role.ADMIN, Role.PRACTITIONER)
   @ApiOperation({
     summary: 'Retrieve List of All Users (Admin Only)',
     description: `
@@ -105,12 +107,13 @@ The result is sorted by registration date (descending) by default.
     },
   })
   @Get()
-  async findAll(@Query() query: QueryUserDto) {
-    const users = await this.userService.findAll(query);
+  async findAll(@Query() query: QueryUserDto, @Request() req) {
+    const users = await this.userService.findAll(query, req.user.userId);
     return users;
   }
 
   // approve user
+  @Roles(Role.ADMIN)
   @ApiExcludeEndpoint()
   @ApiResponse({ description: 'Approve a user' })
   @Post(':id/approve')
@@ -127,6 +130,7 @@ The result is sorted by registration date (descending) by default.
   }
 
   // reject user
+  @Roles(Role.ADMIN)
   @ApiExcludeEndpoint()
   @ApiResponse({ description: 'Reject a user' })
   @Post(':id/reject')
@@ -172,16 +176,9 @@ Includes profile details, settings, and activity summary.
     },
   })
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    try {
-      const user = await this.userService.findOne(id);
-      return user;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
+  async findOne(@Param('id') id: string, @Request() req) {
+    const user = await this.userService.findOne(id, req.user.userId);
+    return user;
   }
 
   @ApiOperation({
@@ -201,6 +198,7 @@ If a user is banned, they will no longer be able to log in or access protected r
       },
     },
   })
+  @Roles(Role.ADMIN)
   @Patch(':id/ban-unban')
   async banUnbanUser(@Param('id') id: string) {
     const user = await this.userService.banUnbanUser(id);
@@ -224,6 +222,7 @@ Provide only the fields that need to be updated.
       },
     },
   })
+  @Roles(Role.ADMIN)
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -250,6 +249,7 @@ Permanently removes a user account and all associated data from the system.
       },
     },
   })
+  @Roles(Role.ADMIN)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(id);

@@ -1,5 +1,6 @@
 import {
   Injectable,
+  ForbiddenException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -153,7 +154,26 @@ export class UserService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requester_id?: string) {
+    // If a practitioner is making the request, restrict to type=user only
+    if (requester_id) {
+      const requester = await this.prisma.user.findUnique({
+        where: { id: requester_id },
+        select: { type: true },
+      });
+      if (requester?.type === 'practitioner') {
+        const target = await this.prisma.user.findUnique({
+          where: { id },
+          select: { type: true },
+        });
+        if (!target || target.type !== 'user') {
+          throw new ForbiddenException(
+            'Practitioners can only view member (user) profiles',
+          );
+        }
+      }
+    }
+
     const user = await this.prisma.user.findUnique({
       where: {
         id: id,
@@ -169,18 +189,30 @@ export class UserService {
         type: true,
         date_of_birth: true,
         avatar: true,
+        status: true,
+        patients: {
+          select: {
+            id: true,
+            prescription: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
       },
     });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
     // add avatar url to user
     if (user.avatar) {
       user['avatar_url'] = SojebStorage.url(
         appConfig().storageUrl.avatar + user.avatar,
       );
-    }
-
-    if (!user) {
-      throw new NotFoundException('User not found');
     }
 
     return {
