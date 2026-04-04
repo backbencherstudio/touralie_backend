@@ -406,7 +406,6 @@ export class LibraryService {
   async remove(id: string) {
     const videoToDelete = await this.prisma.video.findUnique({
       where: { id },
-      include: { video_chapters: true },
     });
 
     if (!videoToDelete) throw new Error('Video not found');
@@ -418,22 +417,10 @@ export class LibraryService {
       } catch (e) {}
     }
 
-    // 2. Delete video thumbnail
     if (videoToDelete.thumbnail_url) {
       try {
         await SojebStorage.delete(videoToDelete.thumbnail_url);
       } catch (e) {}
-    }
-
-    // 3. Delete chapters thumbnails
-    if (videoToDelete.video_chapters) {
-      for (const chapter of videoToDelete.video_chapters) {
-        if (chapter.thumbnail_url) {
-          try {
-            await SojebStorage.delete(chapter.thumbnail_url);
-          } catch (e) {}
-        }
-      }
     }
 
     const video = await this.prisma.video.delete({
