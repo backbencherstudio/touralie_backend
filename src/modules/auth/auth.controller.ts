@@ -51,6 +51,7 @@ import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Auth')
 @ApiBearerAuth('admin_token')
+@ApiBearerAuth('practitioner_token')
 @ApiBearerAuth('user_token')
 @Controller('auth')
 export class AuthController {

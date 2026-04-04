@@ -123,6 +123,7 @@ export class UserService {
         height: true,
         gender: true,
         type: true,
+        status: true,
         date_of_birth: true,
         created_at: true,
       },
@@ -138,7 +139,17 @@ export class UserService {
     return {
       success: true,
       message: 'Users fetched successfully',
-      data: users,
+      data: users.map((user) => {
+        return {
+          ...user,
+          status:
+            user.status === 1
+              ? 'ACTIVE'
+              : user.status === 2
+                ? 'BANNED'
+                : 'PENDING',
+        };
+      }),
       meta_data: {
         page,
         limit,

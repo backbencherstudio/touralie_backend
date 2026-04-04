@@ -28,6 +28,7 @@ import { PrescribedMembersQueryDto } from './dto/query-prescription.dto';
 
 @ApiTags('Prescription')
 @ApiBearerAuth('admin_token')
+@ApiBearerAuth('practitioner_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN, Role.PRACTITIONER)
 @Controller('admin/prescription')
@@ -35,7 +36,7 @@ export class PrescriptionController {
   constructor(private readonly prescriptionService: PrescriptionService) {}
 
   @ApiOperation({
-    summary: 'Create a new prescription (Admin Only)',
+    summary: 'Create a new prescription (Admin & Practitioner Only)',
     description: `This endpoint allows administrators to create a new prescription, 
 Required fields:
 - patient_ids
@@ -61,7 +62,7 @@ Optional fields:
   }
 
   @ApiOperation({
-    summary: 'Create a new prescription template (Admin Only)',
+    summary: 'Create a new prescription template (Admin & Practitioner Only)',
     description: `This endpoint allows administrators to create a new prescription template, 
 Required fields:
 - title
@@ -87,7 +88,7 @@ Required fields:
   }
 
   @ApiOperation({
-    summary: 'Find all prescribed members (Admin Only)',
+    summary: 'Find all prescribed members (Admin & Practitioner Only)',
     description: `This endpoint allows administrators to find all prescribed members. You can filter by: 
     - date
     - search by name, email, or video title.
@@ -129,7 +130,7 @@ Required fields:
   }
 
   @ApiOperation({
-    summary: 'Find all prescription templates (Admin Only)',
+    summary: 'Find all prescription templates (Admin & Practitioner Only)',
     description: `This endpoint allows administrators to find all prescription templates.`,
   })
   @ApiResponse({
@@ -165,7 +166,7 @@ Required fields:
   }
 
   @ApiOperation({
-    summary: 'Find one prescription (Admin Only)',
+    summary: 'Find one prescription (Admin & Practitioner Only)',
     description: `This endpoint allows administrators to find one prescription.
     - patientId param is required
     `,
@@ -209,7 +210,7 @@ Required fields:
   }
 
   @ApiOperation({
-    summary: 'Find one prescription template (Admin Only)',
+    summary: 'Find one prescription template (Admin & Practitioner Only)',
     description: `This endpoint allows administrators to find one prescription template.
     - templateId param is required
     `,
@@ -252,7 +253,7 @@ Required fields:
     return this.prescriptionService.findOnePrescriptionTemplate(id);
   }
   @ApiOperation({
-    summary: 'Delete one prescription template (Admin Only)',
+    summary: 'Delete one prescription template (Admin & Practitioner Only)',
     description: `This endpoint allows administrators to delete one prescription template.
     - templateId param is required
     `,
@@ -273,7 +274,7 @@ Required fields:
   }
 
   @ApiOperation({
-    summary: 'Delete one prescription (Admin Only)',
+    summary: 'Delete one prescription (Admin & Practitioner Only)',
     description: `This endpoint allows administrators to delete one prescription.
     - patient-id param is required
     `,

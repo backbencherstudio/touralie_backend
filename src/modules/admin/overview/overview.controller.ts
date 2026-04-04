@@ -15,6 +15,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 @ApiBearerAuth('admin_token')
+@ApiBearerAuth('practitioner_token')
 @ApiTags('Overview')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN, Role.PRACTITIONER)
@@ -23,7 +24,7 @@ export class OverviewController {
   constructor(private readonly overviewService: OverviewService) {}
 
   @ApiOperation({
-    summary: 'Get user stats',
+    summary: 'Get user stats (Admin & Practitioner Only)',
     description: `Get user stats for the specified year and months. The response includes the total number of users and active users for each month.`,
   })
   @ApiResponse({
@@ -65,7 +66,7 @@ export class OverviewController {
   }
 
   @ApiOperation({
-    summary: 'Get activities',
+    summary: 'Get activities (Admin & Practitioner Only)',
     description: `Get activities for the specified page and limit.`,
   })
   @ApiResponse({
@@ -107,7 +108,7 @@ export class OverviewController {
   }
 
   @ApiOperation({
-    summary: 'Get stats',
+    summary: 'Get stats (Admin & Practitioner Only)',
     description: `Get stats for the specified year and months. The response includes the total number of users and active users for each month.`,
   })
   @ApiResponse({

@@ -89,6 +89,10 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'admin_token',
     )
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'practitioner_token',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, options);
@@ -123,7 +127,12 @@ async function bootstrap() {
                 return response;
               }
 
-              var key = type === 'admin' ? 'admin_token' : 'user_token';
+              var key =
+                type === 'admin'
+                  ? 'admin_token'
+                  : type === 'practitioner'
+                    ? 'practitioner_token'
+                    : 'user_token';
 
               var ui = window['ui'];
 

@@ -57,7 +57,7 @@ export class UserController {
   }
   @Roles(Role.ADMIN, Role.PRACTITIONER)
   @ApiOperation({
-    summary: 'Retrieve List of All Users (Admin Only)',
+    summary: 'Retrieve List of All Users (Admin & Practitioner Only)',
     description: `
 Fetch a paginated list of all users registered in the system. 
 Allows filtering by status, type (gender), and date range.
@@ -68,6 +68,22 @@ The result is sorted by registration date (descending) by default.
 - **status**: Filter by account status (e.g., PENDING, ACTIVE, BANNED).
 - **type**: Filter by gender (e.g., MALE, FEMALE).
 - **start_date / end_date**: Filter by creation date.
+
+
+**Status Values:**
+- **PENDING**: User has not completed registration or verification.
+- **ACTIVE**: User is active and can log in.
+- **BANNED**: User account is suspended.
+
+**Type Values:**
+- **MALE**: User is male.
+- **FEMALE**: User is female.
+
+**Role Values:**
+- **all**: All users.
+- **admin**: Admin user.
+- **practitioner**: Practitioner user.
+- **user**: User user.
 `,
   })
   @ApiResponse({
@@ -86,7 +102,7 @@ The result is sorted by registration date (descending) by default.
             height: 175,
             gender: 'male',
             type: 'user',
-            status: 1,
+            status: 'ACTIVE',
             date_of_birth: '1998-05-20T00:00:00.000Z',
             created_at: '2026-03-16T10:00:00.000Z',
           },

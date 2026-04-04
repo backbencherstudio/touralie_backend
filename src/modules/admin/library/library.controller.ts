@@ -26,8 +26,6 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { InitVideoUploadDto } from './dto/init-video-upload.dto';
-import { CreateChapterDto } from './dto/create-chapter.dto';
-import { UpdateChapterDto as UpdateChapterDtoLocal } from './dto/update-chapter.dto';
 import { Roles } from '../../../common/guard/role/roles.decorator';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guard/role/roles.guard';
@@ -37,6 +35,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 
 @ApiTags('Library')
 @ApiBearerAuth('admin_token')
+@ApiBearerAuth('practitioner_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN, Role.PRACTITIONER)
 @Controller('admin/library')
@@ -44,7 +43,7 @@ export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
   @ApiOperation({
-    summary: 'Phase 1: Initialize video upload (Admin Only)',
+    summary: 'Phase 1: Initialize video upload (Admin & Practitioner Only)',
     description:
       'Step 1 of the multi-phase upload flow. Takes the filename and an optional thumbnail image (multipart). Returns a pre-signed S3/MinIO URL for direct client-side upload and a unique video ID.\n\n' +
       '**Manual Upload Steps:**\n' +
@@ -97,7 +96,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Create category (Admin Only)',
+    summary: 'Create category (Admin & Practitioner Only)',
     description: 'Creates a new category.',
   })
   @ApiResponse({
@@ -124,7 +123,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Get all categories (Admin Only)',
+    summary: 'Get all categories (Admin & Practitioner Only)',
     description: 'Returns list of all categories.',
   })
   @ApiResponse({
@@ -154,7 +153,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Delete category (Admin Only)',
+    summary: 'Delete category (Admin & Practitioner Only)',
     description: 'Deletes a category.',
   })
   @ApiResponse({
@@ -181,7 +180,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Phase 3: Complete video upload (Admin Only)',
+    summary: 'Phase 3: Complete video upload (Admin & Practitioner Only)',
     description:
       'Step 3 of the multi-phase upload flow. Call this AFTER the frontend has successfully uploaded the video file directly to the pre-signed URL (Phase 2). This moves the video from temp storage to permanent storage and changes the status to DRAFT, enabling metadata updates.',
   })
@@ -215,7 +214,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Initialize video re-upload (Admin Only)',
+    summary: 'Initialize video re-upload (Admin & Practitioner Only)',
     description:
       'Allows replacing existing video file. Returns new pre-signed URL.\n\n' +
       '**Steps:**\n' +
@@ -254,7 +253,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Get all videos (Admin Only)',
+    summary: 'Get all videos (Admin & Practitioner Only)',
     description: 'Returns list of all videos in the library.',
   })
   @ApiResponse({
@@ -306,7 +305,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Get single video by ID (Admin Only)',
+    summary: 'Get single video by ID (Admin & Practitioner Only)',
     description: 'Returns detailed video info including chapters.',
   })
   @ApiResponse({
@@ -357,7 +356,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Update video metadata (Admin Only)',
+    summary: 'Update video metadata (Admin & Practitioner Only)',
     description:
       'Allows updating title, description, category, and level. This is ONLY permitted if the video status is NOT UPLOADING. Thumbnail is updated via multipart file upload.',
   })
@@ -415,7 +414,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Delete video (Admin Only)',
+    summary: 'Delete video (Admin & Practitioner Only)',
     description: 'Deletes video and associated chapters.',
   })
   @ApiResponse({
@@ -435,7 +434,7 @@ export class LibraryController {
   }
 
   // @ApiOperation({
-  //   summary: 'Add chapter to video (Admin Only)',
+  //   summary: 'Add chapter to video (Admin & Practitioner Only)',
   //   description:
   //     'Adds a new time-mark chapter. Requires start_time and end_time. Thumbnails are uploaded as files. Overlap with existing chapters is validated.',
   // })
@@ -484,7 +483,7 @@ export class LibraryController {
   // }
 
   // @ApiOperation({
-  //   summary: 'Get chapters of a video (Admin Only)',
+  //   summary: 'Get chapters of a video (Admin & Practitioner Only)',
   //   description: 'Returns list of chapters sorted by start time.',
   // })
   // @ApiResponse({
@@ -516,7 +515,7 @@ export class LibraryController {
   // }
 
   // @ApiOperation({
-  //   summary: 'Update chapter (Admin Only)',
+  //   summary: 'Update chapter (Admin & Practitioner Only)',
   //   description: 'Updates chapter metadata or thumbnail file.',
   // })
   // @ApiResponse({
@@ -564,7 +563,7 @@ export class LibraryController {
   // }
 
   // @ApiOperation({
-  //   summary: 'Remove chapter (Admin Only)',
+  //   summary: 'Remove chapter (Admin & Practitioner Only)',
   //   description: 'Permanently deletes a specific chapter.',
   // })
   // @ApiResponse({

@@ -171,6 +171,11 @@ export class AuthService {
     });
 
     if (user) {
+      if (user.status === 2) {
+        throw new UnauthorizedException(
+          'Your account has been banned! Please contact support for more information.',
+        );
+      }
       const _isValidPassword = await this.userRepository.validatePassword({
         email: email,
         password: _password,
