@@ -251,10 +251,12 @@ export class PrescriptionService {
     return {
       success: true,
       message: 'Prescription templates fetched successfully',
-      data: prescriptionTemplates.map((prescriptionTemplate) => ({
-        ...prescriptionTemplate,
-        total_videos: prescriptionTemplate._count.videos,
-      })),
+      data: prescriptionTemplates.map(({ _count, ...prescriptionTemplate }) => {
+        return {
+          ...prescriptionTemplate,
+          total_videos: _count.videos,
+        };
+      }),
       meta_data: {
         page,
         limit,

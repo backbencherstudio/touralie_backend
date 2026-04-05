@@ -77,10 +77,10 @@ async function bootstrap() {
 
   // Swagger setup
   const options = new DocumentBuilder()
-    .setTitle(`${process.env.APP_NAME} API`)
-    .setDescription(`${process.env.APP_NAME} API Docs`)
+    .setTitle(`${appConfig().app.name} API`)
+    .setDescription(`${appConfig().app.name} API Docs`)
     .setVersion('1.0')
-    .addTag(`${process.env.APP_NAME}`)
+    // .addTag(`${appConfig().app.name}`)
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'user_token',
@@ -98,7 +98,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, options);
 
   SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: `${appConfig().app.name?.toUpperCase()} API`,
     swaggerOptions: {
+      docExpansion: 'none',
       persistAuthorization: true,
       defaultModelsExpandDepth: -1,
 
