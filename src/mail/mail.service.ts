@@ -78,4 +78,26 @@ export class MailService {
       console.log(error);
     }
   }
+
+  async sendPractitionerCredentials({ name, email, password }) {
+    try {
+      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const subject = `Your Practitioner Account Credentials`;
+
+      // add to queue
+      await this.queue.add('sendPractitionerCredentials', {
+        to: email,
+        from: from,
+        subject: subject,
+        template: 'practitioner-credentials',
+        context: {
+          name,
+          email,
+          password
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }

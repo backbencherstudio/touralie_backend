@@ -209,6 +209,9 @@ export class PrescriptionService {
       id: prescription.id,
       title: prescription.title,
       created_at: prescription.created_at,
+      last_played_video_id: prescription?.videos?.find(
+        (v) => v.video.watch_histories?.[0]?.last_played_position > 0,
+      )?.video?.id,
       videos: prescription.videos.map((v) => ({
         id: v.video.id,
         reps: v.reps,

@@ -4,7 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreatePractitionerDto, CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserByAdminDto } from './dto/update-user.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { UserRepository } from '../../../common/repository/user/user.repository';
@@ -16,6 +16,7 @@ import { Prisma } from 'prisma/generated/client';
 
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
 import { Role } from 'src/common/guard/role/role.enum';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UserService {
@@ -23,6 +24,7 @@ export class UserService {
     private prisma: PrismaService,
     private userRepository: UserRepository,
     private activityRepository: ActivityRepository,
+    private mailService: MailService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -48,18 +50,30 @@ export class UserService {
     }
   }
 
-  async createPractitioner(createUserDto: CreateUserDto) {
-    await this.userRepository.createUser({
-      ...createUserDto,
+  async createPractitioner(createPractitionerDto: CreatePractitionerDto) {
+    const user = await this.userRepository.createUser({
+      ...createPractitionerDto,
       type: Role.PRACTITIONER,
       status: 1,
       approved_at: DateHelper.now(),
     });
 
-    return {
-      success: true,
-      message: 'Practitioner created successfully',
-    };
+    if (user.success) {
+      await this.mailService.sendPractitionerCredentials({
+        name: createPractitionerDto.name,
+        email: createPractitionerDto.email,
+        password: createPractitionerDto.password,
+      });
+      return {
+        success: true,
+        message: 'Practitioner created successfully',
+      };
+    } else {
+      return {
+        success: false,
+        message: user.message,
+      };
+    }
   }
 
   async findAll(query: QueryUserDto, user_id?: string) {

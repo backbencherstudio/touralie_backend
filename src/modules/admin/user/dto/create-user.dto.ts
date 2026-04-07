@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsDate,
@@ -20,6 +21,7 @@ export enum Gender {
 export enum UserType {
   USER = 'user',
   ADMIN = 'admin',
+  PRACTITIONER = 'practitioner',
 }
 
 export class CreateUserDto {
@@ -105,4 +107,61 @@ export class CreateUserDto {
     default: UserType.USER,
   })
   type?: string = 'user';
+}
+export class CreatePractitionerDto {
+  @IsNotEmpty()
+  @ApiProperty({
+    example: 'Practitioner',
+    description: 'Full name of the practitioner',
+  })
+  name: string;
+
+  @IsNotEmpty()
+  @IsEmail()
+  @ApiProperty({
+    example: 'practitioner@example.com',
+    description: 'Unique email address of the practitioner',
+  })
+  email: string;
+
+  @IsNotEmpty()
+  @MinLength(8, { message: 'Password should be minimum 8 characters' })
+  @IsString()
+  @ApiProperty({
+    example: '12345678',
+    description: 'Password for the practitioner account (Min 8 characters)',
+  })
+  password: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
+    enum: Gender,
+    example: Gender.MALE,
+    description: 'Gender of the practitioner',
+    required: false,
+  })
+  gender?: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  @ApiProperty({
+    example: '1998-05-20T00:00:00.000Z',
+    description:
+      'Date of birth of the practitioner in ISO 8601 format. (Optional)',
+    required: false,
+  })
+  date_of_birth?: Date;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
+    enum: UserType,
+    example: UserType.PRACTITIONER,
+    description: 'Type of the practitioner (practitioner)',
+    required: false,
+    default: UserType.PRACTITIONER,
+  })
+  type?: string = 'practitioner';
 }

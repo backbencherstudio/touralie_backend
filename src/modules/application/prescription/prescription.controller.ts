@@ -128,6 +128,7 @@ export class PrescriptionController {
           properties: {
             id: { type: 'string' },
             title: { type: 'string' },
+            last_played_video_id: { type: 'string', nullable: true },
             created_at: { type: 'string' },
             videos: {
               type: 'array',

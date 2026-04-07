@@ -11,7 +11,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreatePractitionerDto, CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserByAdminDto } from './dto/update-user.dto';
 import {
   ApiBearerAuth,
@@ -49,13 +49,42 @@ export class UserController {
     }
   }
 
+  @ApiOperation({
+    summary: 'Create a Practitioner',
+    description: `
+Create a new practitioner account.
+
+**Request Body:**
+- **name**: Full name of the practitioner (required).
+- **email**: Unique email address (required).
+- **password**: Password for the account (minimum 8 characters, required).
+- **gender**: Gender of the practitioner (MALE or FEMALE, optional).
+- **date_of_birth**: Date of birth in ISO 8601 format (e.g., "1998-05-20T00:00:00.000Z", optional).
+- **type**: Type of the user, should be 'practitioner' (default).
+`,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Practitioner created successfully.',
+    schema: {
+      example: {
+        success: true,
+        message: 'Practitioner created successfully',
+      },
+    },
+  })
   @Roles(Role.ADMIN)
   @Post('create_practitioner')
-  async createPractitioner(@Body() createUserDto: CreateUserDto) {
-    const user = await this.userService.createPractitioner(createUserDto);
+  async createPractitioner(
+    @Body() createPractitionerDto: CreatePractitionerDto,
+  ) {
+    const user = await this.userService.createPractitioner(
+      createPractitionerDto,
+    );
     return user;
   }
   @Roles(Role.ADMIN, Role.PRACTITIONER)
+  @ApiBearerAuth('practitioner_token')
   @ApiOperation({
     summary: 'Retrieve List of All Users (Admin & Practitioner Only)',
     description: `
@@ -191,6 +220,8 @@ Includes profile details, settings, and activity summary.
       },
     },
   })
+  @ApiBearerAuth('practitioner_token')
+  @Roles(Role.ADMIN, Role.PRACTITIONER)
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req) {
     const user = await this.userService.findOne(id, req.user.userId);
