@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { RedisModule } from '@nestjs-modules/ioredis';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { UserRepository } from './user/user.repository';
 import { ChatRepository } from './chat/chat.repository';
@@ -9,7 +10,7 @@ import { ActivityRepository } from './activity/activity.repository';
 
 @Global()
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, RedisModule],
   providers: [
     UserRepository,
     ChatRepository,
