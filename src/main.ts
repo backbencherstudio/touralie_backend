@@ -33,6 +33,7 @@ async function bootstrap() {
       'http://localhost:3000',
     ],
     credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
   });
   app.use(
     helmet({
