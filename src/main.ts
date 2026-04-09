@@ -23,7 +23,15 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
   app.enableCors({
-    origin: ['*', 'http://localhost:3001', 'http://localhost:3000'],
+    origin: [
+      '*',
+      'https://dashboard.irclinic.com.au',
+      'http://dashboard.irclinic.com.au',
+      'https://www.dashboard.irclinic.com.au',
+      'http://www.dashboard.irclinic.com.au',
+      'http://localhost:3001',
+      'http://localhost:3000',
+    ],
     credentials: true,
   });
   app.use(
