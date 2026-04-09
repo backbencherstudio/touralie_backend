@@ -24,6 +24,7 @@
     "db:push": "prisma db push",
     "db:gen": "prisma generate",
     "db:studio": "prisma studio",
+    "db:studio:nb": "prisma studio --browser none",
     "db:reset": "prisma migrate reset"
   },
   "dependencies": {
