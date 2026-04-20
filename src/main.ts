@@ -24,13 +24,13 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors({
     origin: [
-      '*',
       'https://dashboard.irclinic.com.au',
       'http://dashboard.irclinic.com.au',
       'https://www.dashboard.irclinic.com.au',
       'http://www.dashboard.irclinic.com.au',
       'http://localhost:3001',
       'http://localhost:3000',
+      appConfig().app.client_app_url || '',
     ],
     credentials: true,
     allowedHeaders: 'Content-Type, Accept, Authorization',
