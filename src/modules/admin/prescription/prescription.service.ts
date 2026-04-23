@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import {
   CreatePrescriptionDto,
   CreatePrescriptionTemplateDto,
@@ -20,6 +24,22 @@ export class PrescriptionService {
   ) {}
 
   async createPrescription(createPrescriptionDto: CreatePrescriptionDto) {
+    // Validate: only users with type "patient" can be assigned as patients
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: createPrescriptionDto.patient_ids } },
+      select: { id: true, type: true, name: true },
+    });
+
+    const nonPatientIds = users
+      .filter((user) => user.type !== 'user')
+      .map((user) => user.name);
+
+    if (nonPatientIds.length > 0) {
+      throw new BadRequestException(
+        `The following user(s) (${nonPatientIds.join(', ')}) cannot be assigned as patients.`,
+      );
+    }
+
     const prescription = await this.prisma.prescription.create({
       data: {
         title: createPrescriptionDto.title,
@@ -61,7 +81,7 @@ export class PrescriptionService {
         receiver_id: patientId,
         title: 'New Prescription Assigned',
         description: `A new prescription has been assigned to you with ${createPrescriptionDto.videos.length} videos.`,
-        type: 'blog',
+        type: 'prescription',
       });
     }
 

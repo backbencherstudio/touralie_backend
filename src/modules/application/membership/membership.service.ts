@@ -52,7 +52,11 @@ export class MembershipService {
 
     // Notify Admins
     const admins = await this.prisma.user.findMany({
-      where: { type: 'admin' },
+      where: {
+        type: {
+          in: ['admin', 'practitioner'],
+        },
+      },
       select: { id: true },
     });
 
@@ -61,7 +65,7 @@ export class MembershipService {
         receiver_id: admin.id,
         title: 'New Member Lead Created',
         description: `New member lead created by "${memberLead.member.name}" for plan "${memberLead.plan.title}".`,
-        type: 'package',
+        type: 'membership_lead',
       });
     }
 

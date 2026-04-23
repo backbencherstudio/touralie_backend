@@ -399,7 +399,7 @@ export class AuthService {
           receiver_id: admin.id,
           title: 'New User Registered',
           description: `A new user ${name} (${email}) has registered on the platform.`,
-          type: 'package',
+          type: 'auth',
         });
       }
     }

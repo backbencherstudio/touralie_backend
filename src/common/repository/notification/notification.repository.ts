@@ -38,8 +38,9 @@ export class NotificationRepository {
       | 'review'
       | 'booking'
       | 'payment_transaction'
-      | 'package'
-      | 'blog';
+      | 'auth'
+      | 'membership_lead'
+      | 'prescription';
     entity_id?: string;
   }) {
     const notificationEventData = {};

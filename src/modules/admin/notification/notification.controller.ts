@@ -24,6 +24,7 @@ import { Request } from 'express';
 import { QueryNotificationDto } from './dto/query-notification.dto';
 
 @ApiBearerAuth('admin_token')
+@ApiBearerAuth('practitioner_token')
 @ApiTags('Notification')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN, Role.PRACTITIONER)

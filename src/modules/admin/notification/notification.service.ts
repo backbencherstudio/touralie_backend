@@ -121,7 +121,7 @@ export class NotificationService {
     try {
       await this.prisma.notification.updateMany({
         where: {
-          receiver_id: user_id,
+          OR: [{ receiver_id: user_id }, { receiver_id: null }],
           read_at: null,
         },
         data: {
