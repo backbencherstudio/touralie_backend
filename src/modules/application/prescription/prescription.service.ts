@@ -409,6 +409,7 @@ export class PrescriptionService {
       success: true,
       message: 'Prescription video fetched successfully',
       data: {
+        prescription_id: activePrescriptionId,
         video_id: activeVideo.id,
         prescription_title: activePrescriptionTitle,
         video_title: activeVideo.title,

@@ -6,6 +6,7 @@ import { UserRepository } from '../../../common/repository/user/user.repository'
 import { Role } from '../../../common/guard/role/role.enum';
 
 import { QueryNotificationDto } from './dto/query-notification.dto';
+import { Prisma } from 'prisma/generated/browser';
 
 @Injectable()
 export class NotificationService {
@@ -20,7 +21,7 @@ export class NotificationService {
       const limit = Number(query.limit) || 10;
       const skip = (page - 1) * limit;
 
-      const where_condition = {};
+      const where_condition: Prisma.NotificationWhereInput = {};
       const userDetails = await this.userRepository.getUserDetails(user_id);
 
       if (userDetails.type == Role.ADMIN) {
@@ -28,6 +29,8 @@ export class NotificationService {
           { receiver_id: { equals: user_id } },
           { receiver_id: { equals: null } },
         ];
+      } else {
+        where_condition['receiver_id'] = user_id;
       }
 
       const notifications = await this.prisma.notification.findMany({
@@ -119,9 +122,21 @@ export class NotificationService {
 
   async markAllAsRead(user_id: string) {
     try {
+      const userDetails = await this.userRepository.getUserDetails(user_id);
+
+      const where_condition: Prisma.NotificationWhereInput = {};
+
+      if (userDetails.type == Role.ADMIN) {
+        where_condition['OR'] = [
+          { receiver_id: { equals: user_id } },
+          { receiver_id: { equals: null } },
+        ];
+      } else {
+        where_condition['receiver_id'] = user_id;
+      }
       await this.prisma.notification.updateMany({
         where: {
-          OR: [{ receiver_id: user_id }, { receiver_id: null }],
+          ...where_condition,
           read_at: null,
         },
         data: {
@@ -178,11 +193,21 @@ export class NotificationService {
 
   async removeAll(user_id: string) {
     try {
+      const userDetails = await this.userRepository.getUserDetails(user_id);
+
+      let where_condition: Prisma.NotificationWhereInput = {};
+
+      if (userDetails.type == Role.ADMIN) {
+        where_condition['OR'] = [
+          { receiver_id: { equals: user_id } },
+          { receiver_id: { equals: null } },
+        ];
+      } else {
+        where_condition['receiver_id'] = user_id;
+      }
       // check if notification exists
       const notifications = await this.prisma.notification.findMany({
-        where: {
-          receiver_id: user_id,
-        },
+        where: where_condition,
       });
 
       if (notifications.length == 0) {
@@ -193,9 +218,7 @@ export class NotificationService {
       }
 
       await this.prisma.notification.deleteMany({
-        where: {
-          OR: [{ receiver_id: user_id }, { receiver_id: null }],
-        },
+        where: where_condition,
       });
 
       return {
