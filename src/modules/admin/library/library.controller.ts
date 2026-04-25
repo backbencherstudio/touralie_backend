@@ -244,6 +244,8 @@ export class LibraryController {
       },
     },
   })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('thumbnail', { storage: memoryStorage() }))
   @Patch(':id/init-reupload')
   initReupload(
     @Param('id') id: string,

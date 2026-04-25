@@ -75,18 +75,48 @@ export class LibraryService {
     };
   }
 
-  async initReupload(id: string, initVideoUploadDto: InitVideoUploadDto) {
+  async initReupload(
+    id: string,
+    initVideoUploadDto: InitVideoUploadDto,
+    thumbnailFile?: Express.Multer.File,
+  ) {
+    const existingVideo = await this.prisma.video.findUnique({ where: { id } });
+    if (!existingVideo) throw new Error('Video not found');
+
     const { filename } = initVideoUploadDto;
     const extension = filename.split('.').pop();
     const key = `${appConfig().storageUrl.tempVideo}${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
 
-    await this.prisma.video.update({
+    let thumbnailUrl = existingVideo.thumbnail_url;
+
+    if (thumbnailFile) {
+      // Delete old thumbnail if it exists
+      if (existingVideo.thumbnail_url) {
+        try {
+          await SojebStorage.delete(existingVideo.thumbnail_url);
+        } catch (e) {}
+      }
+
+      const thumbExtension = thumbnailFile.originalname.split('.').pop();
+      const thumbKey = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
+      await SojebStorage.put(thumbKey, thumbnailFile.buffer, thumbnailFile.mimetype);
+      thumbnailUrl = thumbKey;
+    }
+
+    const updatedVideo = await this.prisma.video.update({
       where: { id },
       data: {
         url: key,
         status: VideoStatus.UPLOADING,
+        thumbnail_url: thumbnailUrl,
+        duration: initVideoUploadDto.duration ?? existingVideo.duration,
       },
     });
+
+    await this.activityRepository.createActivity(
+      'Video Re-upload Started',
+      `Re-upload initiated for video "${existingVideo.title || 'Untitled'}".`,
+    );
 
     const uploadUrl = await SojebStorage.getSignedUrl(
       key,
@@ -100,6 +130,10 @@ export class LibraryService {
       data: {
         video_id: id,
         upload_url: uploadUrl,
+        status: updatedVideo.status,
+        thumbnail_url: updatedVideo.thumbnail_url
+          ? SojebStorage.url(updatedVideo.thumbnail_url)
+          : null,
       },
     };
   }

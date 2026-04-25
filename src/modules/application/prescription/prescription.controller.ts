@@ -87,6 +87,7 @@ export class PrescriptionController {
           type: 'object',
           nullable: true,
           properties: {
+            prescription_id: { type: 'string' },
             video_id: { type: 'string' },
             prescription_title: { type: 'string' },
             video_title: { type: 'string' },
