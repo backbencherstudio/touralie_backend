@@ -10,6 +10,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { SojebStorage } from '../../lib/Disk/SojebStorage';
 
 @Injectable()
 export class UserRepository {
@@ -443,6 +444,15 @@ export class UserRepository {
         id: user_id,
       },
     });
+
+    if (existUser.avatar) {
+      try {
+        await SojebStorage.delete(
+          appConfig().storageUrl.avatar + existUser.avatar,
+        );
+      } catch (e) {}
+    }
+
     return {
       success: true,
       message: 'User deleted successfully',
