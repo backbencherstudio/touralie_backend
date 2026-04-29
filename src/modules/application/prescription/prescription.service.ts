@@ -335,8 +335,9 @@ export class PrescriptionService {
       activePrescriptionTitle = fallbackCandidate.prescription.title;
     }
 
-    // 3. DB Level Aggregation for Total videos & Completed videos
-    const [totalVideos, completedVideos] = await Promise.all([
+    // 3. DB Level Aggregation for Total videos & Watched videos
+    // Progress should move once a user starts a video (not only when fully completed).
+    const [totalVideos, watchedVideos] = await Promise.all([
       this.prisma.prescriptionVideo.count({
         where: {
           prescription_id: activePrescriptionId,
@@ -351,7 +352,10 @@ export class PrescriptionService {
             watch_histories: {
               some: {
                 user_id: userId,
-                is_completed: true,
+                OR: [
+                  { is_completed: true },
+                  { last_played_position: { gt: 0 } },
+                ],
               },
             },
           },
@@ -360,7 +364,7 @@ export class PrescriptionService {
     ]);
 
     const prescriptionProgress =
-      totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
+      totalVideos > 0 ? Math.round((watchedVideos / totalVideos) * 100) : 0;
 
     // 4. Determine Dynamic Message Based on Progress (Using Switch for 10% intervals)
     let progressMessage = 'Start your journey to recovery today!';
