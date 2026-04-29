@@ -445,8 +445,30 @@ export class LibraryService {
       throw new NotFoundException('Video not found');
     }
 
+    if (dto.prescription_id) {
+      const prescriptionVideo = await this.prisma.prescriptionVideo.findFirst({
+        where: {
+          prescription_id: dto.prescription_id,
+          video_id: videoId,
+          prescription: {
+            patients: {
+              some: { user_id: userId },
+            },
+          },
+        },
+      });
+
+      if (!prescriptionVideo) {
+        throw new NotFoundException('Prescription video not found');
+      }
+    }
+
     const watchHistory = await this.prisma.watchHistory.findFirst({
-      where: { video_id: videoId, user_id: userId },
+      where: {
+        video_id: videoId,
+        user_id: userId,
+        prescription_id: dto.prescription_id ?? null,
+      },
     });
 
     const is_completed =
@@ -458,6 +480,7 @@ export class LibraryService {
         data: {
           last_played_position: dto.last_played_position,
           is_completed: is_completed || watchHistory.is_completed,
+          prescription_id: dto.prescription_id ?? null,
           updated_at: new Date(),
         },
       });
@@ -466,6 +489,7 @@ export class LibraryService {
         data: {
           video_id: videoId,
           user_id: userId,
+          prescription_id: dto.prescription_id ?? null,
           last_played_position: dto.last_played_position,
           is_completed: is_completed,
         },

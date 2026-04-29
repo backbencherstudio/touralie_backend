@@ -531,11 +531,13 @@ model WatchHistory {
 
   user_id              String?
   video_id             String?
+  prescription_id      String?
   is_completed         Boolean @default(false)
   last_played_position Int? // in seconds
 
-  user  User?  @relation(fields: [user_id], references: [id], onDelete: SetNull)
-  video Video? @relation(fields: [video_id], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  video        Video?        @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  prescription Prescription? @relation("PrescriptionWatchHistory", fields: [prescription_id], references: [id], onDelete: SetNull)
 
   @@map("watch_histories")
 }
@@ -561,6 +563,7 @@ model Prescription {
   title    String
   videos   PrescriptionVideo[]
   patients Patient[]
+  watch_histories WatchHistory[] @relation("PrescriptionWatchHistory")
 
   @@map("prescriptions")
 }

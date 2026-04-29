@@ -290,7 +290,7 @@ Call this periodically during playback to ensure progress is saved.
 
 **Fields:**
 - **last_played_position**: Time in seconds.
-- **is_completed**: Boolean flag.
+- **prescription_id**: Optional for normal library videos. Send it when updating progress from a prescription video, so resume can return the same prescription context.
 `,
   })
   @ApiResponse({

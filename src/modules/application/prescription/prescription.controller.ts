@@ -93,6 +93,7 @@ export class PrescriptionController {
             video_title: { type: 'string' },
             video_thumbnail: { type: 'string' },
             video_duration: { type: 'number' },
+            last_played_position: { type: 'number' },
             total_videos: { type: 'number' },
             watch_status: { type: 'string' },
             progress: { type: 'number' },

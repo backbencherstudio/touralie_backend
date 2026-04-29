@@ -63,6 +63,7 @@ export class PrescriptionService {
                     user_id: userId,
                   },
                   select: {
+                    prescription_id: true,
                     is_completed: true,
                     last_played_position: true,
                   },
@@ -90,7 +91,9 @@ export class PrescriptionService {
 
       // Count completed videos and check for any progress
       p.videos.forEach((v) => {
-        const history = v.video.watch_histories?.[0];
+        const history = v.video.watch_histories?.find(
+          (history) => history.prescription_id === p.id,
+        );
         if (history) {
           if (history.is_completed) {
             totalCompletedVideos++;
@@ -110,7 +113,9 @@ export class PrescriptionService {
         thumbnail_url = p.videos[0]?.video?.thumbnail_url || null;
       } else {
         for (const v of p.videos) {
-          const history = v.video.watch_histories?.[0];
+          const history = v.video.watch_histories?.find(
+            (history) => history.prescription_id === p.id,
+          );
           const isCompleted = history?.is_completed || false;
           if (!isCompleted) {
             thumbnail_url = v.video.thumbnail_url;
@@ -185,6 +190,7 @@ export class PrescriptionService {
                 watch_histories: {
                   where: {
                     user_id: userId,
+                    prescription_id: id,
                   },
                   select: {
                     is_completed: true,
@@ -242,25 +248,27 @@ export class PrescriptionService {
     let activeVideo = null;
     let activePrescriptionId = null;
     let activePrescriptionTitle = null;
+    let activeLastPlayedPosition = 0;
     let watchStatus = 'NOT_STARTED';
 
     // 1. Try to find the most recently played video for this user natively in DB
     const latestWatchHistory = await this.prisma.watchHistory.findFirst({
       where: {
         user_id: userId,
+        prescription_id: { not: null },
+        prescription: {
+          patients: { some: { user_id: userId } },
+        },
         video: {
           status: 'PUBLISHED',
-          prescription_videos: {
-            some: {
-              prescription: { patients: { some: { user_id: userId } } },
-            },
-          },
         },
       },
       orderBy: { updated_at: 'desc' },
       select: {
+        prescription_id: true,
         is_completed: true,
         last_played_position: true,
+        prescription: { select: { title: true } },
         video: {
           select: {
             id: true,
@@ -269,30 +277,16 @@ export class PrescriptionService {
             duration: true,
             thumbnail_url: true,
             category: { select: { title: true } },
-            prescription_videos: {
-              where: {
-                prescription: { patients: { some: { user_id: userId } } },
-              },
-              select: {
-                prescription_id: true,
-                prescription: { select: { title: true } },
-              },
-              take: 1,
-            },
           },
         },
       },
     });
 
-    if (
-      latestWatchHistory &&
-      latestWatchHistory.video.prescription_videos.length > 0
-    ) {
+    if (latestWatchHistory?.prescription_id) {
       activeVideo = latestWatchHistory.video;
-      activePrescriptionId =
-        latestWatchHistory.video.prescription_videos[0].prescription_id;
-      activePrescriptionTitle =
-        latestWatchHistory.video.prescription_videos[0].prescription.title;
+      activePrescriptionId = latestWatchHistory.prescription_id;
+      activePrescriptionTitle = latestWatchHistory.prescription?.title;
+      activeLastPlayedPosition = latestWatchHistory.last_played_position || 0;
       watchStatus = latestWatchHistory.is_completed
         ? 'COMPLETED'
         : 'IN_PROGRESS';
@@ -335,27 +329,33 @@ export class PrescriptionService {
       activePrescriptionTitle = fallbackCandidate.prescription.title;
     }
 
-    // 3. DB Level Aggregation for Total videos & Watched videos
-    // Progress should move once a user starts a video (not only when fully completed).
-    const [totalVideos, watchedVideos] = await Promise.all([
+    // 3. Calculate progress by watched time, not only completed video count.
+    const [totalVideos, prescriptionVideos] = await Promise.all([
       this.prisma.prescriptionVideo.count({
         where: {
           prescription_id: activePrescriptionId,
           video: { status: 'PUBLISHED' },
         },
       }),
-      this.prisma.prescriptionVideo.count({
+      this.prisma.prescriptionVideo.findMany({
         where: {
           prescription_id: activePrescriptionId,
+          video: { status: 'PUBLISHED' },
+        },
+        select: {
           video: {
-            status: 'PUBLISHED',
-            watch_histories: {
-              some: {
-                user_id: userId,
-                OR: [
-                  { is_completed: true },
-                  { last_played_position: { gt: 0 } },
-                ],
+            select: {
+              duration: true,
+              watch_histories: {
+                where: {
+                  user_id: userId,
+                  prescription_id: activePrescriptionId,
+                },
+                select: {
+                  is_completed: true,
+                  last_played_position: true,
+                },
+                take: 1,
               },
             },
           },
@@ -363,8 +363,38 @@ export class PrescriptionService {
       }),
     ]);
 
+    const totalDuration = prescriptionVideos.reduce(
+      (sum, item) => sum + (item.video.duration || 0),
+      0,
+    );
+
+    const watchedDuration = prescriptionVideos.reduce((sum, item) => {
+      const videoDuration = item.video.duration || 0;
+      const history = item.video.watch_histories?.[0];
+
+      if (!history || videoDuration <= 0) {
+        return sum;
+      }
+
+      if (history.is_completed) {
+        return sum + videoDuration;
+      }
+
+      return sum + Math.min(history.last_played_position || 0, videoDuration);
+    }, 0);
+
+    const watchedVideos = prescriptionVideos.filter((item) => {
+      const history = item.video.watch_histories?.[0];
+
+      return history?.is_completed || (history?.last_played_position || 0) > 0;
+    }).length;
+
     const prescriptionProgress =
-      totalVideos > 0 ? Math.round((watchedVideos / totalVideos) * 100) : 0;
+      totalDuration > 0
+        ? Math.round((watchedDuration / totalDuration) * 100)
+        : totalVideos > 0
+          ? Math.round((watchedVideos / totalVideos) * 100)
+          : 0;
 
     // 4. Determine Dynamic Message Based on Progress (Using Switch for 10% intervals)
     let progressMessage = 'Start your journey to recovery today!';
@@ -421,6 +451,7 @@ export class PrescriptionService {
           ? SojebStorage.url(activeVideo.thumbnail_url)
           : null,
         video_duration: activeVideo.duration || 0,
+        last_played_position: activeLastPlayedPosition,
         total_videos: totalVideos,
         watch_status: watchStatus,
         progress: prescriptionProgress,
