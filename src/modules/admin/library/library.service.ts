@@ -3,8 +3,6 @@ import { UpdateLibraryDto } from './dto/update-library.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import appConfig from '../../../config/app.config';
 import { InitVideoUploadDto } from './dto/init-video-upload.dto';
-import { CreateChapterDto } from './dto/create-chapter.dto';
-import { UpdateChapterDto as UpdateChapterDtoLocal } from './dto/update-chapter.dto';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 import { VideoStatus } from 'prisma/generated/enums';
 import { LibraryQueryStatus, QueryLibraryDto } from './dto/query-library.dto';
@@ -18,7 +16,7 @@ export class LibraryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityRepository: ActivityRepository,
-  ) {}
+  ) { }
 
   async initUpload(
     initVideoUploadDto: InitVideoUploadDto,
@@ -47,6 +45,8 @@ export class LibraryService {
         status: VideoStatus.UPLOADING,
         thumbnail_url: thumbnailUrl,
         duration: initVideoUploadDto.duration || 0,
+        type: initVideoUploadDto.type,
+        visibility: initVideoUploadDto.visibility,
       },
     });
 
@@ -94,7 +94,7 @@ export class LibraryService {
       if (existingVideo.thumbnail_url) {
         try {
           await SojebStorage.delete(existingVideo.thumbnail_url);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const thumbExtension = thumbnailFile.originalname.split('.').pop();
@@ -110,6 +110,8 @@ export class LibraryService {
         status: VideoStatus.UPLOADING,
         thumbnail_url: thumbnailUrl,
         duration: initVideoUploadDto.duration ?? existingVideo.duration,
+        type: initVideoUploadDto.type ?? existingVideo.type,
+        visibility: initVideoUploadDto.visibility ?? existingVideo.visibility,
       },
     });
 
@@ -271,6 +273,8 @@ export class LibraryService {
         duration: true,
         created_at: true,
         thumbnail_url: true,
+        type: true,
+        visibility: true,
         status: true,
         category: {
           select: {
@@ -330,6 +334,16 @@ export class LibraryService {
         description: true,
         url: true,
         thumbnail_url: true,
+        type: true,
+        visibility: true,
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          }
+        },
         status: true,
         category: {
           select: {
@@ -345,6 +359,11 @@ export class LibraryService {
       video.thumbnail_url = video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
         : null;
+
+      video.users = video.users?.map((user) => ({
+        ...user,
+        avatar: user.avatar ? SojebStorage.url(user.avatar) : null,
+      }));
     }
 
     return {
@@ -386,7 +405,7 @@ export class LibraryService {
       if (video.thumbnail_url) {
         try {
           await SojebStorage.delete(video.thumbnail_url);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const thumbExtension = thumbnailFile.originalname.split('.').pop();
@@ -401,13 +420,22 @@ export class LibraryService {
 
     // remove thumbnail field from data as it's not a prisma field
     delete data.thumbnail;
+
+    const user_ids = data.user_ids;
+    delete data.user_ids;
+
     await this.activityRepository.createActivity(
       'Video Updated',
       `Video "${video.title}" metadata has been updated.`,
     );
     const updatedVideo = await this.prisma.video.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        users: {
+          set: user_ids?.map((id: string) => ({ id })) || []
+        },
+      },
       select: {
         id: true,
         title: true,
@@ -415,6 +443,16 @@ export class LibraryService {
         description: true,
         url: true,
         thumbnail_url: true,
+        type: true,
+        visibility: true,
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          }
+        },
         status: true,
         category: {
           select: {
@@ -429,6 +467,10 @@ export class LibraryService {
       message: 'Video updated successfully',
       data: {
         ...updatedVideo,
+        users: updatedVideo.users?.map((user) => ({
+          ...user,
+          avatar: user.avatar ? SojebStorage.url(user.avatar) : null,
+        })),
         url: updatedVideo.url ? SojebStorage.url(updatedVideo.url) : null,
         thumbnail_url: updatedVideo.thumbnail_url
           ? SojebStorage.url(updatedVideo.thumbnail_url)
@@ -448,13 +490,13 @@ export class LibraryService {
     if (videoToDelete.url) {
       try {
         await SojebStorage.delete(videoToDelete.url);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (videoToDelete.thumbnail_url) {
       try {
         await SojebStorage.delete(videoToDelete.thumbnail_url);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const video = await this.prisma.video.delete({

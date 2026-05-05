@@ -5,87 +5,102 @@ import {
 } from './dto/query-library.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from 'prisma/generated/client';
+import { VideoStatus, VideoType, Visibility } from 'prisma/generated/enums';
 import { UpdateWatchProgressDto } from './dto/update-watch-progress.dto';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
 @Injectable()
 export class LibraryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findAll(query: QueryPublicLibraryDto, userId?: string) {
     const { page, limit, search, category_id, start_date, end_date } = query;
     const skip = (page - 1) * limit;
-    let personalization: string[] = [];
 
-    if (userId) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { personalization: true },
-      });
-      if (user) {
-        personalization = user.personalization;
-      }
-    }
-
-    // Prepare search term for SQL
-    const searchTerm = search ? `%${search}%` : null;
-
-    // Use a single query to fetch ranked videos with their category and chapter counts
-    // This ensures all sorting and filtering happens entirely in the database
-    const videos = await this.prisma.$queryRaw<any[]>(Prisma.sql`
-      SELECT 
-        v.id,
-        v.title,
-        v.duration,
-        v.created_at,
-        v.thumbnail_url,
-        c.title as category_title,
-        ${userId ? Prisma.sql`EXISTS(SELECT 1 FROM "FavoriteVideo" fv WHERE fv.video_id = v.id AND fv.user_id = ${userId})` : Prisma.sql`false`} as is_favorite
-      FROM videos v
-      LEFT JOIN categories c ON v.category_id = c.id
-      WHERE v.deleted_at IS NULL 
-        AND v.status = 'PUBLISHED'
-        ${searchTerm ? Prisma.sql`AND (v.title ILIKE ${searchTerm} OR v.description ILIKE ${searchTerm})` : Prisma.empty}
-        ${category_id ? Prisma.sql`AND v.category_id = ${category_id}` : Prisma.empty}
-        ${start_date ? Prisma.sql`AND v.created_at >= ${new Date(start_date)}` : Prisma.empty}
-        ${end_date ? Prisma.sql`AND v.created_at <= ${new Date(end_date)}` : Prisma.empty}
-      ORDER BY 
-        (CASE WHEN c.title = ANY(${personalization}) THEN 1 ELSE 0 END) DESC,
-        v.created_at DESC
-      LIMIT ${limit} OFFSET ${skip}
-    `);
-
-    // Base conditions for total count
     const where: Prisma.VideoWhereInput = {
       deleted_at: null,
-      status: 'PUBLISHED',
-      ...(search && {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-      ...(category_id && { category_id }),
-      ...((start_date || end_date) && {
-        created_at: {
-          ...(start_date && { gte: start_date }),
-          ...(end_date && { lte: end_date }),
+      status: VideoStatus.PUBLISHED,
+      type: VideoType.OTHER,
+      AND: [
+        {
+          OR: [
+            { visibility: Visibility.PUBLIC },
+            ...(userId
+              ? [
+                {
+                  AND: [
+                    { visibility: Visibility.LISTED },
+                    { users: { some: { id: userId } } },
+                  ],
+                },
+              ]
+              : []),
+          ],
         },
-      }),
+        ...(search
+          ? [
+            {
+              OR: [
+                { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
+                { description: { contains: search, mode: Prisma.QueryMode.insensitive } },
+              ],
+            },
+          ]
+          : []),
+        ...(category_id ? [{ category_id }] : []),
+        ...(start_date || end_date
+          ? [
+            {
+              created_at: {
+                ...(start_date && { gte: start_date }),
+                ...(end_date && { lte: end_date }),
+              },
+            },
+          ]
+          : []),
+      ],
     };
 
-    const total = await this.prisma.video.count({ where });
+    const [videos, total] = await Promise.all([
+      this.prisma.video.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          duration: true,
+          created_at: true,
+          thumbnail_url: true,
+          category: {
+            select: {
+              title: true,
+            },
+          },
+          ...(userId && {
+            favorite_videos: {
+              where: { user_id: userId },
+              select: { id: true },
+            },
+          }),
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.video.count({ where }),
+    ]);
 
     const formattedVideos = videos.map((video) => ({
-      id: video.id ?? null,
-      title: video.title ?? null,
-      duration: video.duration ?? null,
-      created_at: video.created_at ?? null,
-      is_favorite: video.is_favorite ?? false,
+      id: video.id,
+      title: video.title,
+      duration: video.duration,
+      created_at: video.created_at,
+      is_favorite: userId ? (video as any).favorite_videos.length > 0 : false,
       thumbnail_url: video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
         : null,
-      category: video.category_title ?? null,
+      category: video.category?.title ?? null,
     }));
 
     return {
@@ -105,6 +120,100 @@ export class LibraryService {
       },
     };
   }
+
+  // async findAll(query: QueryPublicLibraryDto, userId?: string) {
+  //   const { page, limit, search, category_id, start_date, end_date } = query;
+  //   const skip = (page - 1) * limit;
+  //   let personalization: string[] = [];
+
+  //   if (userId) {
+  //     const user = await this.prisma.user.findUnique({
+  //       where: { id: userId },
+  //       select: { personalization: true },
+  //     });
+  //     if (user) {
+  //       personalization = user.personalization;
+  //     }
+  //   }
+
+  //   // Prepare search term for SQL
+  //   const searchTerm = search ? `%${search}%` : null;
+
+  //   // Use a single query to fetch ranked videos with their category and chapter counts
+  //   // This ensures all sorting and filtering happens entirely in the database
+  //   const videos = await this.prisma.$queryRaw<any[]>(Prisma.sql`
+  //     SELECT 
+  //       v.id,
+  //       v.title,
+  //       v.duration,
+  //       v.created_at,
+  //       v.thumbnail_url,
+  //       c.title as category_title,
+  //       ${userId ? Prisma.sql`EXISTS(SELECT 1 FROM "FavoriteVideo" fv WHERE fv.video_id = v.id AND fv.user_id = ${userId})` : Prisma.sql`false`} as is_favorite
+  //     FROM videos v
+  //     LEFT JOIN categories c ON v.category_id = c.id
+  //     WHERE v.deleted_at IS NULL 
+  //       AND v.status = 'PUBLISHED'
+  //       ${searchTerm ? Prisma.sql`AND (v.title ILIKE ${searchTerm} OR v.description ILIKE ${searchTerm})` : Prisma.empty}
+  //       ${category_id ? Prisma.sql`AND v.category_id = ${category_id}` : Prisma.empty}
+  //       ${start_date ? Prisma.sql`AND v.created_at >= ${new Date(start_date)}` : Prisma.empty}
+  //       ${end_date ? Prisma.sql`AND v.created_at <= ${new Date(end_date)}` : Prisma.empty}
+  //     ORDER BY 
+  //       (CASE WHEN c.title = ANY(${personalization}) THEN 1 ELSE 0 END) DESC,
+  //       v.created_at DESC
+  //     LIMIT ${limit} OFFSET ${skip}
+  //   `);
+
+  //   // Base conditions for total count
+  //   const where: Prisma.VideoWhereInput = {
+  //     deleted_at: null,
+  //     status: 'PUBLISHED',
+  //     ...(search && {
+  //       OR: [
+  //         { title: { contains: search, mode: 'insensitive' } },
+  //         { description: { contains: search, mode: 'insensitive' } },
+  //       ],
+  //     }),
+  //     ...(category_id && { category_id }),
+  //     ...((start_date || end_date) && {
+  //       created_at: {
+  //         ...(start_date && { gte: start_date }),
+  //         ...(end_date && { lte: end_date }),
+  //       },
+  //     }),
+  //   };
+
+  //   const total = await this.prisma.video.count({ where });
+
+  //   const formattedVideos = videos.map((video) => ({
+  //     id: video.id ?? null,
+  //     title: video.title ?? null,
+  //     duration: video.duration ?? null,
+  //     created_at: video.created_at ?? null,
+  //     is_favorite: video.is_favorite ?? false,
+  //     thumbnail_url: video.thumbnail_url
+  //       ? SojebStorage.url(video.thumbnail_url)
+  //       : null,
+  //     category: video.category_title ?? null,
+  //   }));
+
+  //   return {
+  //     success: true,
+  //     message: 'Videos found successfully',
+  //     data: formattedVideos,
+  //     meta_data: {
+  //       page,
+  //       limit,
+  //       total,
+  //       search,
+  //       filter: {
+  //         category_id,
+  //         start_date,
+  //         end_date,
+  //       },
+  //     },
+  //   };
+  // }
 
   async findAllCategories() {
     const categories = await this.prisma.category.findMany({

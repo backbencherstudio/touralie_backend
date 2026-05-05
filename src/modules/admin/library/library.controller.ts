@@ -40,7 +40,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 @Roles(Role.ADMIN, Role.PRACTITIONER)
 @Controller('admin/library')
 export class LibraryController {
-  constructor(private readonly libraryService: LibraryService) {}
+  constructor(private readonly libraryService: LibraryService) { }
 
   @ApiOperation({
     summary: 'Phase 1: Initialize video upload (Admin & Practitioner Only)',
@@ -68,7 +68,6 @@ export class LibraryController {
           properties: {
             video_id: { type: 'string', example: 'clz123' },
             upload_url: { type: 'string', example: 'https://storage...' },
-            key: { type: 'string', example: 'temp-videos/xyz.mp4' },
             status: { type: 'string', example: 'UPLOADING' },
             thumbnail_url: { type: 'string', example: 'thumbnail/abc.jpg' },
           },
@@ -238,7 +237,6 @@ export class LibraryController {
           properties: {
             video_id: { type: 'string' },
             upload_url: { type: 'string' },
-            key: { type: 'string' },
           },
         },
       },
@@ -273,6 +271,8 @@ export class LibraryController {
               id: { type: 'string' },
               title: { type: 'string' },
               thumbnail_url: { type: 'string' },
+              type: { type: 'string' },
+              visibility: { type: 'string' },
               status: { type: 'string' },
               category: { type: 'string' },
               created_at: { type: 'string' },
@@ -326,6 +326,20 @@ export class LibraryController {
             duration: { type: 'number' },
             url: { type: 'string' },
             thumbnail_url: { type: 'string' },
+            type: { type: 'string' },
+            visibility: { type: 'string' },
+            users: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  email: { type: 'string' },
+                  avatar: { type: 'string' },
+                },
+              },
+            },
             status: { type: 'string' },
             category: {
               type: 'object',
@@ -376,6 +390,20 @@ export class LibraryController {
             title: { type: 'string' },
             url: { type: 'string' },
             thumbnail_url: { type: 'string' },
+            type: { type: 'string' },
+            visibility: { type: 'string' },
+            users: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  email: { type: 'string' },
+                  avatar: { type: 'string' },
+                },
+              },
+            },
             status: { type: 'string' },
           },
         },

@@ -100,6 +100,8 @@ model User {
   patients        Patient[]
   dailyCheckIns   DailyCheckIn[]
 
+  videos Video[]
+
   @@map("users")
 }
 
@@ -490,6 +492,17 @@ enum VideoStatus {
   PUBLISHED
 }
 
+enum VideoType {
+  PRESCRIBABLE
+  OTHER
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+  LISTED
+}
+
 model Video {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -504,8 +517,11 @@ model Video {
   category_id   String?
   status        VideoStatus @default(UPLOADING)
   duration      Int? // in seconds
+  type          VideoType   @default(OTHER)
+  visibility    Visibility  @default(PRIVATE)
 
   category               Category?              @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  users                  User[]
   favorite_videos        FavoriteVideo[]
   watch_histories        WatchHistory[]
   prescription_videos    PrescriptionVideo[]
@@ -560,10 +576,10 @@ model Prescription {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  title    String
-  videos   PrescriptionVideo[]
-  patients Patient[]
-  watch_histories WatchHistory[] @relation("PrescriptionWatchHistory")
+  title           String
+  videos          PrescriptionVideo[]
+  patients        Patient[]
+  watch_histories WatchHistory[]      @relation("PrescriptionWatchHistory")
 
   @@map("prescriptions")
 }
