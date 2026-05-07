@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { VideoType } from 'prisma/generated/enums';
 
 export class PaginationQueryDto {
   @ApiProperty({
@@ -77,6 +78,15 @@ export class FiltersQueryDto {
   @IsOptional()
   @IsString()
   category_id?: string;
+
+  @ApiProperty({
+    description: 'Type of the video',
+    example: VideoType.PRESCRIBABLE,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(VideoType)
+  type?: VideoType;
 }
 
 export class QueryLibraryDto extends IntersectionType(

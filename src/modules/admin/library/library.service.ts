@@ -236,7 +236,7 @@ export class LibraryService {
   }
 
   async findAll(query: QueryLibraryDto) {
-    const { page, limit, search, start_date, end_date, status, category_id } =
+    const { page, limit, search, start_date, end_date, status, category_id, type } =
       query;
     const skip = (page - 1) * limit;
 
@@ -257,6 +257,10 @@ export class LibraryService {
 
     if (category_id) {
       where.category_id = category_id;
+    }
+
+    if (type) {
+      where.type = type
     }
 
     if (start_date && end_date) {
@@ -315,6 +319,7 @@ export class LibraryService {
         total,
         search,
         filters: {
+          type,
           status,
           category_id,
           start_date,
