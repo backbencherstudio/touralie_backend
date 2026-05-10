@@ -63,6 +63,7 @@ export class FiltersQueryDto {
 
   @ApiProperty({
     description: 'Status of the video',
+    enum: LibraryQueryStatus,
     example: LibraryQueryStatus.ALL,
     required: false,
   })
@@ -81,6 +82,7 @@ export class FiltersQueryDto {
 
   @ApiProperty({
     description: 'Type of the video',
+    enum: VideoType,
     example: VideoType.PRESCRIBABLE,
     required: false,
   })
