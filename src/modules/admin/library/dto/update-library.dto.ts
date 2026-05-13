@@ -51,10 +51,11 @@ export class UpdateLibraryDto {
   @ApiProperty({
     required: false,
     example: ['ckz1234567890', 'ckz1234567891'],
-    description: "Update this filed only for listed visibility"
+    description: "Update this field only for listed visibility"
   })
   @IsOptional()
-  @IsArray({ each: true })
+  @IsArray()
+  @IsString({ each: true })
   user_ids?: string[];
 
   @ApiProperty({
