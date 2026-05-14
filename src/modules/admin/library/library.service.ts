@@ -16,7 +16,7 @@ export class LibraryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityRepository: ActivityRepository,
-  ) { }
+  ) {}
 
   async initUpload(
     initVideoUploadDto: InitVideoUploadDto,
@@ -94,12 +94,16 @@ export class LibraryService {
       if (existingVideo.thumbnail_url) {
         try {
           await SojebStorage.delete(existingVideo.thumbnail_url);
-        } catch (e) { }
+        } catch (e) {}
       }
 
       const thumbExtension = thumbnailFile.originalname.split('.').pop();
       const thumbKey = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(thumbKey, thumbnailFile.buffer, thumbnailFile.mimetype);
+      await SojebStorage.put(
+        thumbKey,
+        thumbnailFile.buffer,
+        thumbnailFile.mimetype,
+      );
       thumbnailUrl = thumbKey;
     }
 
@@ -236,8 +240,16 @@ export class LibraryService {
   }
 
   async findAll(query: QueryLibraryDto) {
-    const { page, limit, search, start_date, end_date, status, category_id, type } =
-      query;
+    const {
+      page,
+      limit,
+      search,
+      start_date,
+      end_date,
+      status,
+      category_id,
+      type,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.VideoWhereInput = {
@@ -260,7 +272,7 @@ export class LibraryService {
     }
 
     if (type) {
-      where.type = type
+      where.type = type;
     }
 
     if (start_date && end_date) {
@@ -346,8 +358,9 @@ export class LibraryService {
             id: true,
             name: true,
             email: true,
-            avatar: true,
-          }
+            gender: true,
+            date_of_birth: true,
+          },
         },
         status: true,
         category: {
@@ -364,11 +377,6 @@ export class LibraryService {
       video.thumbnail_url = video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
         : null;
-
-      video.users = video.users?.map((user) => ({
-        ...user,
-        avatar: user.avatar ? SojebStorage.url(user.avatar) : null,
-      }));
     }
 
     return {
@@ -410,7 +418,7 @@ export class LibraryService {
       if (video.thumbnail_url) {
         try {
           await SojebStorage.delete(video.thumbnail_url);
-        } catch (e) { }
+        } catch (e) {}
       }
 
       const thumbExtension = thumbnailFile.originalname.split('.').pop();
@@ -438,7 +446,7 @@ export class LibraryService {
       data: {
         ...data,
         users: {
-          set: user_ids?.map((id: string) => ({ id })) || []
+          set: user_ids?.map((id: string) => ({ id })) || [],
         },
       },
       select: {
@@ -456,7 +464,7 @@ export class LibraryService {
             name: true,
             email: true,
             avatar: true,
-          }
+          },
         },
         status: true,
         category: {
@@ -495,13 +503,13 @@ export class LibraryService {
     if (videoToDelete.url) {
       try {
         await SojebStorage.delete(videoToDelete.url);
-      } catch (e) { }
+      } catch (e) {}
     }
 
     if (videoToDelete.thumbnail_url) {
       try {
         await SojebStorage.delete(videoToDelete.thumbnail_url);
-      } catch (e) { }
+      } catch (e) {}
     }
 
     const video = await this.prisma.video.delete({

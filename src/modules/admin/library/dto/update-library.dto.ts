@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { VideoStatus, Visibility } from 'prisma/generated/enums';
 import { IsOptional, IsString, IsEnum, IsInt, ValidateIf, IsArray } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class UpdateLibraryDto {
   @ApiProperty({ required: false, example: 'Yoga for Beginners' })
@@ -50,10 +50,15 @@ export class UpdateLibraryDto {
   @ValidateIf((ob) => ob.visibility === Visibility.LISTED)
   @ApiProperty({
     required: false,
-    example: ['ckz1234567890', 'ckz1234567891'],
-    description: "Update this field only for listed visibility"
+    type: [String],
+    example: ['id1', 'id2'],
   })
   @IsOptional()
+  @Transform(({ value }) => {
+
+    if (typeof value === 'string') return [value];
+    return value;
+  })
   @IsArray()
   @IsString({ each: true })
   user_ids?: string[];

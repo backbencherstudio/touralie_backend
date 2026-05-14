@@ -40,7 +40,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 @Roles(Role.ADMIN, Role.PRACTITIONER)
 @Controller('admin/library')
 export class LibraryController {
-  constructor(private readonly libraryService: LibraryService) { }
+  constructor(private readonly libraryService: LibraryService) {}
 
   @ApiOperation({
     summary: 'Phase 1: Initialize video upload (Admin & Practitioner Only)',
@@ -400,7 +400,8 @@ export class LibraryController {
                   id: { type: 'string' },
                   name: { type: 'string' },
                   email: { type: 'string' },
-                  avatar: { type: 'string' },
+                  gender: { type: 'string' },
+                  date_of_birth: { type: 'string' },
                 },
               },
             },
