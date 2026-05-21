@@ -11,7 +11,7 @@ import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
 @Injectable()
 export class LibraryService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryPublicLibraryDto, userId?: string) {
     const { page, limit, search, category_id, start_date, end_date } = query;
@@ -27,36 +27,46 @@ export class LibraryService {
             { visibility: Visibility.PUBLIC },
             ...(userId
               ? [
-                {
-                  AND: [
-                    { visibility: Visibility.LISTED },
-                    { users: { some: { id: userId } } },
-                  ],
-                },
-              ]
+                  {
+                    AND: [
+                      { visibility: Visibility.LISTED },
+                      { users: { some: { id: userId } } },
+                    ],
+                  },
+                ]
               : []),
           ],
         },
         ...(search
           ? [
-            {
-              OR: [
-                { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
-                { description: { contains: search, mode: Prisma.QueryMode.insensitive } },
-              ],
-            },
-          ]
+              {
+                OR: [
+                  {
+                    title: {
+                      contains: search,
+                      mode: Prisma.QueryMode.insensitive,
+                    },
+                  },
+                  {
+                    description: {
+                      contains: search,
+                      mode: Prisma.QueryMode.insensitive,
+                    },
+                  },
+                ],
+              },
+            ]
           : []),
         ...(category_id ? [{ category_id }] : []),
         ...(start_date || end_date
           ? [
-            {
-              created_at: {
-                ...(start_date && { gte: start_date }),
-                ...(end_date && { lte: end_date }),
+              {
+                created_at: {
+                  ...(start_date && { gte: start_date }),
+                  ...(end_date && { lte: end_date }),
+                },
               },
-            },
-          ]
+            ]
           : []),
       ],
     };
@@ -142,7 +152,7 @@ export class LibraryService {
   //   // Use a single query to fetch ranked videos with their category and chapter counts
   //   // This ensures all sorting and filtering happens entirely in the database
   //   const videos = await this.prisma.$queryRaw<any[]>(Prisma.sql`
-  //     SELECT 
+  //     SELECT
   //       v.id,
   //       v.title,
   //       v.duration,
@@ -152,13 +162,13 @@ export class LibraryService {
   //       ${userId ? Prisma.sql`EXISTS(SELECT 1 FROM "FavoriteVideo" fv WHERE fv.video_id = v.id AND fv.user_id = ${userId})` : Prisma.sql`false`} as is_favorite
   //     FROM videos v
   //     LEFT JOIN categories c ON v.category_id = c.id
-  //     WHERE v.deleted_at IS NULL 
+  //     WHERE v.deleted_at IS NULL
   //       AND v.status = 'PUBLISHED'
   //       ${searchTerm ? Prisma.sql`AND (v.title ILIKE ${searchTerm} OR v.description ILIKE ${searchTerm})` : Prisma.empty}
   //       ${category_id ? Prisma.sql`AND v.category_id = ${category_id}` : Prisma.empty}
   //       ${start_date ? Prisma.sql`AND v.created_at >= ${new Date(start_date)}` : Prisma.empty}
   //       ${end_date ? Prisma.sql`AND v.created_at <= ${new Date(end_date)}` : Prisma.empty}
-  //     ORDER BY 
+  //     ORDER BY
   //       (CASE WHEN c.title = ANY(${personalization}) THEN 1 ELSE 0 END) DESC,
   //       v.created_at DESC
   //     LIMIT ${limit} OFFSET ${skip}
@@ -296,7 +306,7 @@ export class LibraryService {
       thumbnail_url: video.video.thumbnail_url
         ? SojebStorage.url(video.video.thumbnail_url)
         : null,
-      category: video.video.category.title,
+      category: video?.video?.category?.title || null,
     }));
 
     return {
