@@ -14,7 +14,12 @@ import { ConfigService } from '@nestjs/config';
         transport: {
           host: config.get('mail.host'),
           port: +config.get('mail.port'),
-          secure: false,
+          secure: false,         // false = STARTTLS (Office365 এর জন্য)
+          requireTLS: true,      // STARTTLS enforce করে
+          tls: {
+            ciphers: 'SSLv3',    // Office365 compatibility
+            rejectUnauthorized: false,
+          },
           auth: {
             user: config.get('mail.user'),
             pass: config.get('mail.password'),
