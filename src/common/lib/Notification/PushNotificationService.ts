@@ -7,9 +7,6 @@ export class PushNotificationService {
   private static init() {
     const config = appConfig().firebase;
     if (!config.projectId || !config.clientEmail || !config.privateKey) {
-      // console.warn(
-      //   'Firebase credentials not provided. Push notifications will be disabled.',
-      // );
       return null;
     }
 
@@ -27,6 +24,10 @@ export class PushNotificationService {
     return this.instance;
   }
 
+  static isConfigured() {
+    return this.init() !== null;
+  }
+
   static async sendNotification(
     token: string,
     title: string,
@@ -34,7 +35,12 @@ export class PushNotificationService {
     data?: any,
   ) {
     const app = this.init();
-    if (!app) return;
+    if (!app) {
+      return {
+        success: false,
+        code: 'messaging/not-configured',
+      };
+    }
 
     try {
       const message: admin.messaging.Message = {
@@ -54,10 +60,18 @@ export class PushNotificationService {
         message.data = stringifiedData;
       }
 
-      await app.messaging().send(message);
-      console.log(`Push notification sent to token: ${token}`);
+      const messageId = await app.messaging().send(message);
+      return {
+        success: true,
+        messageId,
+      };
     } catch (error) {
       console.error('Error sending push notification:', error);
+      return {
+        success: false,
+        code: error?.code || 'messaging/unknown-error',
+        error,
+      };
     }
   }
 }

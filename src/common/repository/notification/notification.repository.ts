@@ -97,16 +97,29 @@ export class NotificationRepository {
       try {
         const receiver = await this.prisma.user.findUnique({
           where: { id: receiver_id },
-          select: { fcm_token: true, type: true },
+          select: { fcm_token: true },
         });
 
-        if (receiver && receiver.type === 'user' && receiver.fcm_token) {
-          await PushNotificationService.sendNotification(
+        if (receiver?.fcm_token) {
+          const pushResult = await PushNotificationService.sendNotification(
             receiver.fcm_token,
             title || 'New Notification',
             description || '',
             publishData,
           );
+
+          if (
+            !pushResult?.success &&
+            [
+              'messaging/registration-token-not-registered',
+              'messaging/invalid-registration-token',
+            ].includes(pushResult?.code)
+          ) {
+            await this.prisma.user.update({
+              where: { id: receiver_id },
+              data: { fcm_token: null },
+            });
+          }
         }
       } catch (pushError) {
         console.error('Failed to send push notification:', pushError);

@@ -320,10 +320,14 @@ export class AuthService {
       }
 
       await this.redis.del(`refresh_token:${user_id}`);
+      await this.prisma.user.update({
+        where: { id: user_id },
+        data: { fcm_token: null },
+      });
 
       return {
         success: true,
-        message: 'Refresh token revoked successfully',
+        message: 'Logged out successfully',
       };
     } catch (error) {
       return {

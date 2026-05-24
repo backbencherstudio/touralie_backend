@@ -6,13 +6,19 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { ExecutionContext } from '@nestjs/common';
 
 const mockAuthService = {
-  me: jest.fn().mockResolvedValue({ id: 1, name: 'Test User' }),
+  me: jest.fn().mockResolvedValue({
+    success: true,
+    data: { id: 1, name: 'Test User' },
+  }),
   register: jest.fn().mockResolvedValue({ success: true }),
   login: jest.fn().mockResolvedValue({
     authorization: { access_token: 'access', refresh_token: 'refresh' },
     user: { id: 1, email: 'test@example.com' },
   }),
-  refreshToken: jest.fn().mockResolvedValue({ access_token: 'new_access' }),
+  refreshToken: jest.fn().mockResolvedValue({
+    success: true,
+    authorization: { access_token: 'new_access' },
+  }),
   revokeRefreshToken: jest.fn().mockResolvedValue({ success: true }),
   updateUser: jest.fn().mockResolvedValue({ success: true }),
   forgotPassword: jest.fn().mockResolvedValue({ success: true }),
@@ -22,10 +28,13 @@ const mockAuthService = {
   changePassword: jest.fn().mockResolvedValue({ success: true }),
   requestEmailChange: jest.fn().mockResolvedValue({ success: true }),
   changeEmail: jest.fn().mockResolvedValue({ success: true }),
-  generate2FASecret: jest.fn().mockResolvedValue({ qr: 'base64' }),
-  verify2FA: jest.fn().mockResolvedValue({ valid: true }),
-  enable2FA: jest.fn().mockResolvedValue({ enabled: true }),
-  disable2FA: jest.fn().mockResolvedValue({ disabled: true }),
+  generate2FASecret: jest.fn().mockResolvedValue({
+    success: true,
+    data: { qrCode: 'base64' },
+  }),
+  verify2FA: jest.fn().mockResolvedValue({ success: true }),
+  enable2FA: jest.fn().mockResolvedValue({ success: true }),
+  disable2FA: jest.fn().mockResolvedValue({ success: true }),
 };
 
 // Fake user injection
@@ -100,7 +109,11 @@ describe('AuthController', () => {
       cookie: jest.fn(),
       json: jest.fn(),
     };
-    await controller.login({ user: mockUserRequest.user } as any, res as any);
+    await controller.login(
+      { user: mockUserRequest.user } as any,
+      res as any,
+      { email: 'test@example.com', password: 'password123' } as any,
+    );
     expect(res.cookie).toHaveBeenCalled();
     expect(res.json).toHaveBeenCalled();
   });
