@@ -3,63 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New Prescription Assigned</title>
 </head>
-<body style="margin:0; padding:0; background-color:#eef3f8; font-family:Arial, Helvetica, sans-serif; color:#16324f;">
+<body style="margin:0; padding:0; background-color:#f6faef; font-family:Arial, Helvetica, sans-serif; color:#2f3b1f;">
   <div style="padding:32px 16px;">
-    <div style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:20px; overflow:hidden; box-shadow:0 18px 50px rgba(20, 50, 79, 0.12);">
-      <div style="background:linear-gradient(135deg, #16324f 0%, #2f6fed 100%); padding:32px 28px; color:#ffffff;">
+    <div style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:20px; overflow:hidden; box-shadow:0 18px 50px rgba(97, 129, 43, 0.12);">
+      <div style="background:linear-gradient(135deg, #7fb03f 0%, #a0cf61 100%); padding:32px 28px; color:#1f2a11;">
         <div style="font-size:12px; letter-spacing:1.6px; text-transform:uppercase; opacity:0.8; margin-bottom:10px;">
           <%= appName %>
         </div>
         <h1 style="margin:0; font-size:28px; line-height:1.25; font-weight:700;">
           A new prescription is ready for you
         </h1>
-        <p style="margin:12px 0 0; font-size:15px; line-height:1.7; color:rgba(255,255,255,0.9);">
+        <p style="margin:12px 0 0; font-size:15px; line-height:1.7; color:rgba(31,42,17,0.8);">
           Hi <%= name %>, your care team has assigned a new prescription to your account.
         </p>
       </div>
 
       <div style="padding:28px;">
-        <div style="background:#f7faff; border:1px solid #dbe7f5; border-radius:16px; padding:20px 22px; margin-bottom:24px;">
-          <div style="font-size:13px; color:#5c7087; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:8px;">
+        <div style="background:#f8fbeF; border:1px solid #dceabf; border-radius:16px; padding:20px 22px; margin-bottom:24px;">
+          <div style="font-size:13px; color:#66774a; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:8px;">
             Prescription
           </div>
-          <div style="font-size:24px; font-weight:700; color:#16324f; margin-bottom:6px;">
+          <div style="font-size:24px; font-weight:700; color:#2f3b1f; margin-bottom:6px;">
             <%= prescriptionTitle %>
           </div>
-          <div style="font-size:15px; color:#486079; line-height:1.6;">
+          <div style="font-size:15px; color:#5d6f44; line-height:1.6;">
             Includes <strong><%= totalVideos %></strong> prescribed video<%= totalVideos === 1 ? '' : 's' %> for your recovery plan.
           </div>
         </div>
 
         <% if (videoTitles && videoTitles.length) { %>
           <div style="margin-bottom:24px;">
-            <h2 style="margin:0 0 12px; font-size:18px; color:#16324f;">What's included</h2>
-            <ul style="padding-left:20px; margin:0; color:#486079; font-size:15px; line-height:1.8;">
+            <h2 style="margin:0 0 12px; font-size:18px; color:#2f3b1f;">What's included</h2>
+            <ul style="padding-left:20px; margin:0; color:#5d6f44; font-size:15px; line-height:1.8;">
               <% videoTitles.slice(0, 5).forEach(function(title) { %>
                 <li><%= title %></li>
               <% }); %>
             </ul>
             <% if (videoTitles.length > 5) { %>
-              <p style="margin:12px 0 0; font-size:14px; color:#6c8198;">
+              <p style="margin:12px 0 0; font-size:14px; color:#7f8f66;">
                 And <%= videoTitles.length - 5 %> more in your account.
               </p>
             <% } %>
           </div>
         <% } %>
 
-        <div style="margin-bottom:28px; font-size:15px; line-height:1.8; color:#486079;">
-          Please sign in to review the full prescription details, watch your assigned videos, and follow the recommended plan.
+        <div style="margin-bottom:24px; font-size:15px; line-height:1.8; color:#5d6f44;">
+          Please review the prescribed exercises in your usual app workflow and follow the recommended plan shared by your care team.
         </div>
 
-        <div style="margin-bottom:28px;">
-          <a href="<%= loginUrl %>" style="display:inline-block; background:#2f6fed; color:#ffffff; text-decoration:none; padding:14px 24px; border-radius:999px; font-size:15px; font-weight:700;">
-            Open My Account
-          </a>
-        </div>
-
-        <div style="padding-top:20px; border-top:1px solid #e4ecf4; font-size:13px; line-height:1.7; color:#7a8ea5;">
+        <div style="padding-top:20px; border-top:1px solid #e4ecf4; font-size:13px; line-height:1.7; color:#7f8f66;">
           If you have any questions about this prescription, please contact your practitioner or support team.
         </div>
       </div>

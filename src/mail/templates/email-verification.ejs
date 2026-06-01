@@ -1,48 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Email Verification</title>
-</head>
-<body style="margin:0; padding:0; background-color:#eef3f8; font-family:Arial, Helvetica, sans-serif; color:#16324f;">
-  <div style="padding:32px 16px;">
-    <div style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:20px; overflow:hidden; box-shadow:0 18px 50px rgba(20, 50, 79, 0.12);">
-      <div style="background:linear-gradient(135deg, #16324f 0%, #2f6fed 100%); padding:32px 28px; color:#ffffff;">
-        <div style="font-size:12px; letter-spacing:1.6px; text-transform:uppercase; opacity:0.8; margin-bottom:10px;">
-          <%= process.env.APP_NAME %>
-        </div>
-        <h1 style="margin:0; font-size:28px; line-height:1.25; font-weight:700;">
-          Verify your email address
-        </h1>
-        <p style="margin:12px 0 0; font-size:15px; line-height:1.7; color:rgba(255,255,255,0.9);">
-          Hi <%= name %>, use the one-time verification code below to continue securely.
-        </p>
-      </div>
-
-      <div style="padding:28px;">
-        <p style="margin:0 0 20px; font-size:15px; line-height:1.8; color:#486079;">
-          Enter this code in the app to confirm your email and complete the verification step.
-        </p>
-
-        <div style="margin-bottom:24px; padding:22px; border-radius:16px; background:#f7faff; border:1px solid #dbe7f5; text-align:center;">
-          <div style="font-size:13px; color:#5c7087; text-transform:uppercase; letter-spacing:1.4px; margin-bottom:10px;">
-            Your OTP Code
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f6faef;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #2f3b1f;
+    "
+  >
+    <div style="padding: 32px 16px">
+      <div
+        style="
+          max-width: 640px;
+          margin: 0 auto;
+          background: #ffffff;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 18px 50px rgba(97, 129, 43, 0.12);
+        "
+      >
+        <div
+          style="
+            background: linear-gradient(135deg, #7fb03f 0%, #a0cf61 100%);
+            padding: 32px 28px;
+            color: #1f2a11;
+          "
+        >
+          <div
+            style="
+              font-size: 12px;
+              letter-spacing: 1.6px;
+              text-transform: uppercase;
+              opacity: 0.8;
+              margin-bottom: 10px;
+            "
+          >
+            <%= process.env.APP_NAME %>
           </div>
-          <div style="font-size:34px; line-height:1; font-weight:700; letter-spacing:8px; color:#16324f;">
-            <%= otp %>
+          <h1
+            style="
+              margin: 0;
+              font-size: 28px;
+              line-height: 1.25;
+              font-weight: 700;
+            "
+          >
+            Verify your email address
+          </h1>
+          <p
+            style="
+              margin: 12px 0 0;
+              font-size: 15px;
+              line-height: 1.7;
+              color: rgba(31, 42, 17, 0.8);
+            "
+          >
+            Hi <%= name %>, use the one-time verification code below to continue
+            securely.
+          </p>
+        </div>
+
+        <div style="padding: 28px">
+          <p
+            style="
+              margin: 0 0 20px;
+              font-size: 15px;
+              line-height: 1.8;
+              color: #5d6f44;
+            "
+          >
+            Enter this code in the app to confirm your email and complete the
+            verification step.
+          </p>
+
+          <div
+            style="
+              margin-bottom: 24px;
+              padding: 22px;
+              border-radius: 16px;
+              background: #f8fbef;
+              border: 1px solid #dceabf;
+              text-align: center;
+            "
+          >
+            <div
+              style="
+                font-size: 13px;
+                color: #66774a;
+                text-transform: uppercase;
+                letter-spacing: 1.4px;
+                margin-bottom: 10px;
+              "
+            >
+              Your OTP Code
+            </div>
+            <div
+              style="
+                font-size: 34px;
+                line-height: 1;
+                font-weight: 700;
+                letter-spacing: 8px;
+                color: #2f3b1f;
+              "
+            >
+              <%= otp %>
+            </div>
           </div>
-        </div>
 
-        <div style="margin-bottom:24px; font-size:15px; line-height:1.8; color:#486079;">
-          If you did not request this code, you can safely ignore this email. No changes will be made unless the code is entered.
-        </div>
+          <div
+            style="
+              margin-bottom: 24px;
+              font-size: 15px;
+              line-height: 1.8;
+              color: #5d6f44;
+            "
+          >
+            If you did not request this code, you can safely ignore this email.
+            No changes will be made unless the code is entered.
+          </div>
 
-        <div style="padding-top:20px; border-top:1px solid #e4ecf4; font-size:13px; line-height:1.7; color:#7a8ea5;">
-          This is an automated security message from <%= process.env.APP_NAME %>.
+          <div
+            style="
+              padding-top: 20px;
+              border-top: 1px solid #e4ecf4;
+              font-size: 13px;
+              line-height: 1.7;
+              color: #7f8f66;
+            "
+          >
+            This is an automated security message from <%= process.env.APP_NAME
+            %>.
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>
