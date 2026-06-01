@@ -58,6 +58,9 @@ yarn start:dev
 # production mode
 yarn start:prod
 
+# note
+# current build output entry is dist/src/main.js
+
 # watch mode with swc compiler (faster)
 yarn start:dev-swc
 ```
