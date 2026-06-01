@@ -14,6 +14,7 @@ import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
 import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class PrescriptionService {
@@ -21,13 +22,14 @@ export class PrescriptionService {
     private readonly prisma: PrismaService,
     private readonly activityRepository: ActivityRepository,
     private readonly notificationRepository: NotificationRepository,
+    private readonly mailService: MailService,
   ) {}
 
   async createPrescription(createPrescriptionDto: CreatePrescriptionDto) {
     // Validate: only users with type "patient" can be assigned as patients
     const users = await this.prisma.user.findMany({
       where: { id: { in: createPrescriptionDto.patient_ids } },
-      select: { id: true, type: true, name: true },
+      select: { id: true, type: true, name: true, email: true },
     });
 
     const nonPatientIds = users
@@ -75,14 +77,39 @@ export class PrescriptionService {
       `A new prescription has been created with ${createPrescriptionDto.videos.length} videos for ${createPrescriptionDto.patient_ids.length} patients.`,
     );
 
+    const prescribedVideos = await this.prisma.video.findMany({
+      where: {
+        id: {
+          in: createPrescriptionDto.videos.map((video) => video.video_id),
+        },
+      },
+      select: {
+        title: true,
+      },
+    });
+
+    const videoTitles = prescribedVideos
+      .map((video) => video.title?.trim())
+      .filter((title): title is string => Boolean(title));
+
     // Notify Patients
-    for (const patientId of createPrescriptionDto.patient_ids) {
+    for (const patient of users) {
       await this.notificationRepository.createNotification({
-        receiver_id: patientId,
+        receiver_id: patient.id,
         title: 'New Prescription Assigned',
         description: `A new prescription has been assigned to you with ${createPrescriptionDto.videos.length} videos.`,
         type: 'prescription',
       });
+
+      if (patient.email) {
+        await this.mailService.sendPrescriptionAssignedEmail({
+          name: patient.name || 'there',
+          email: patient.email,
+          prescriptionTitle: createPrescriptionDto.title,
+          totalVideos: createPrescriptionDto.videos.length,
+          videoTitles,
+        });
+      }
     }
 
     return {

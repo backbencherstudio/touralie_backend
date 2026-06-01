@@ -47,11 +47,16 @@ export default () => ({
   },
 
   mail: {
-    host: process.env.MAIL_HOST || 'smtp.gmail.com',
-    port: process.env.MAIL_PORT || 587,
+    host: process.env.MAIL_HOST || 'mail.smtp2go.com',
+    port: parseInt(process.env.MAIL_PORT || '2525', 10),
+    secure: process.env.MAIL_SECURE === 'true',
+    requireTls: process.env.MAIL_REQUIRE_TLS !== 'false',
+    tlsRejectUnauthorized:
+      process.env.MAIL_TLS_REJECT_UNAUTHORIZED !== 'false',
     user: process.env.MAIL_USERNAME,
     password: process.env.MAIL_PASSWORD,
     from: process.env.MAIL_FROM_ADDRESS,
+    fromName: process.env.MAIL_FROM_NAME || process.env.APP_NAME,
   },
 
   auth: {

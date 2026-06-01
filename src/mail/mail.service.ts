@@ -13,7 +13,7 @@ export class MailService {
 
   async sendMemberInvitation({ user, member, url }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = `${appConfig().mail.fromName} <${appConfig().mail.from}>`;
       const subject = `${user.fname} is inviting you to ${appConfig().app.name}`;
 
       // add to queue
@@ -36,7 +36,7 @@ export class MailService {
   // send otp code for email verification
   async sendOtpCodeToEmail({ name, email, otp }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = `${appConfig().mail.fromName} <${appConfig().mail.from}>`;
       const subject = 'Email Verification';
 
       // add to queue
@@ -81,7 +81,7 @@ export class MailService {
 
   async sendPractitionerCredentials({ name, email, password }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = `${appConfig().mail.fromName} <${appConfig().mail.from}>`;
       const subject = `Your Practitioner Account Credentials`;
 
       // add to queue
@@ -93,7 +93,37 @@ export class MailService {
         context: {
           name,
           email,
-          password
+          password,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async sendPrescriptionAssignedEmail(params: {
+    name: string;
+    email: string;
+    prescriptionTitle: string;
+    totalVideos: number;
+    videoTitles: string[];
+  }) {
+    try {
+      const from = `${appConfig().mail.fromName} <${appConfig().mail.from}>`;
+      const subject = `New Prescription: ${params.prescriptionTitle}`;
+
+      await this.queue.add('sendPrescriptionAssignedEmail', {
+        to: params.email,
+        from,
+        subject,
+        template: 'prescription-assigned',
+        context: {
+          name: params.name,
+          prescriptionTitle: params.prescriptionTitle,
+          totalVideos: params.totalVideos,
+          videoTitles: params.videoTitles,
+          appName: appConfig().app.name,
+          loginUrl: appConfig().app.client_app_url,
         },
       });
     } catch (error) {

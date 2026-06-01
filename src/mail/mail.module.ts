@@ -1,10 +1,10 @@
 import { MailerModule } from '@nestjs-modules/mailer';
+import { BullModule } from '@nestjs/bullmq';
+import { ConfigService } from '@nestjs/config';
 import { Global, Module } from '@nestjs/common';
 import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
-import { MailService } from './mail.service';
-import { BullModule } from '@nestjs/bullmq';
 import { MailProcessor } from './processors/mail.processor';
-import { ConfigService } from '@nestjs/config';
+import { MailService } from './mail.service';
 
 @Global()
 @Module({
@@ -14,11 +14,10 @@ import { ConfigService } from '@nestjs/config';
         transport: {
           host: config.get('mail.host'),
           port: +config.get('mail.port'),
-          secure: false,         // false = STARTTLS (Office365 এর জন্য)
-          requireTLS: true,      // STARTTLS enforce করে
+          secure: config.get('mail.secure'),
+          requireTLS: config.get('mail.requireTls'),
           tls: {
-            ciphers: 'SSLv3',    // Office365 compatibility
-            rejectUnauthorized: false,
+            rejectUnauthorized: config.get('mail.tlsRejectUnauthorized'),
           },
           auth: {
             user: config.get('mail.user'),
@@ -26,7 +25,7 @@ import { ConfigService } from '@nestjs/config';
           },
         },
         defaults: {
-          from: config.get('mail.from'),
+          from: `"${config.get('mail.fromName')}" <${config.get('mail.from')}>`,
         },
         template: {
           dir: process.cwd() + '/dist/mail/templates/',
@@ -43,4 +42,4 @@ import { ConfigService } from '@nestjs/config';
   providers: [MailService, MailProcessor],
   exports: [MailService],
 })
-export class MailModule { }
+export class MailModule {}
