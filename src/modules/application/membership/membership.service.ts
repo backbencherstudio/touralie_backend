@@ -4,6 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
 import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
+import { ADMIN_ACCESS_ROLES, Role } from 'src/common/guard/role/role.enum';
 
 @Injectable()
 export class MembershipService {
@@ -54,7 +55,7 @@ export class MembershipService {
     const admins = await this.prisma.user.findMany({
       where: {
         type: {
-          in: ['admin', 'practitioner'],
+          in: [...ADMIN_ACCESS_ROLES, Role.PRACTITIONER],
         },
       },
       select: { id: true },

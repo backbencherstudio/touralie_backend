@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { SojebStorage } from '../../../common/lib/Disk/SojebStorage';
 import appConfig from '../../../config/app.config';
 import { UserRepository } from '../../../common/repository/user/user.repository';
-import { Role } from '../../../common/guard/role/role.enum';
+import { ADMIN_ACCESS_ROLES, Role } from '../../../common/guard/role/role.enum';
 
 import { QueryNotificationDto } from './dto/query-notification.dto';
 import { Prisma } from 'prisma/generated/browser';
@@ -24,7 +24,7 @@ export class NotificationService {
       const where_condition: Prisma.NotificationWhereInput = {};
       const userDetails = await this.userRepository.getUserDetails(user_id);
 
-      if (userDetails.type == Role.ADMIN) {
+      if (ADMIN_ACCESS_ROLES.includes(userDetails.type as Role)) {
         where_condition['OR'] = [
           { receiver_id: { equals: user_id } },
           { receiver_id: { equals: null } },
@@ -126,7 +126,7 @@ export class NotificationService {
 
       const where_condition: Prisma.NotificationWhereInput = {};
 
-      if (userDetails.type == Role.ADMIN) {
+      if (ADMIN_ACCESS_ROLES.includes(userDetails.type as Role)) {
         where_condition['OR'] = [
           { receiver_id: { equals: user_id } },
           { receiver_id: { equals: null } },
@@ -197,7 +197,7 @@ export class NotificationService {
 
       let where_condition: Prisma.NotificationWhereInput = {};
 
-      if (userDetails.type == Role.ADMIN) {
+      if (ADMIN_ACCESS_ROLES.includes(userDetails.type as Role)) {
         where_condition['OR'] = [
           { receiver_id: { equals: user_id } },
           { receiver_id: { equals: null } },

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from './roles.decorator';
-import { Role } from './role.enum';
+import { ADMIN_ACCESS_ROLES, Role } from './role.enum';
 import { UserRepository } from '../../../common/repository/user/user.repository';
 
 @Injectable()
@@ -35,7 +35,9 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    if (requiredRoles.some((role) => userDetails.type?.includes(role))) {
+    if (
+      requiredRoles.some((role) => this.hasRoleAccess(userDetails.type, role))
+    ) {
       return true;
     } else {
       throw new HttpException(
@@ -43,5 +45,17 @@ export class RolesGuard implements CanActivate {
         HttpStatus.FORBIDDEN,
       );
     }
+  }
+
+  private hasRoleAccess(userType: string, requiredRole: Role): boolean {
+    if (userType === requiredRole) {
+      return true;
+    }
+
+    if (requiredRole === Role.ADMIN) {
+      return ADMIN_ACCESS_ROLES.includes(userType as Role);
+    }
+
+    return false;
   }
 }

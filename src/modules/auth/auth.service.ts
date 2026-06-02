@@ -22,6 +22,7 @@ import { StripePayment } from '../../common/lib/Payment/stripe/StripePayment';
 import { StringHelper } from '../../common/helper/string.helper';
 import { ActivityRepository } from '../../common/repository/activity/activity.repository';
 import { NotificationRepository } from '../../common/repository/notification/notification.repository';
+import { ADMIN_ACCESS_ROLES } from '../../common/guard/role/role.enum';
 
 @Injectable()
 export class AuthService {
@@ -396,7 +397,11 @@ export class AuthService {
 
       // Notify Admins
       const admins = await this.prisma.user.findMany({
-        where: { type: 'admin' },
+        where: {
+          type: {
+            in: ADMIN_ACCESS_ROLES,
+          },
+        },
         select: { id: true },
       });
 

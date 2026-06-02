@@ -15,7 +15,7 @@ import { QueryUserDto, UserStatus, UserType } from './dto/query-user.dto';
 import { Prisma } from 'prisma/generated/client';
 
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
-import { Role } from 'src/common/guard/role/role.enum';
+import { ADMIN_ACCESS_ROLES, Role } from 'src/common/guard/role/role.enum';
 import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
@@ -84,7 +84,11 @@ export class UserService {
     const user = await this.prisma.user.findUnique({
       where: { id: user_id },
     });
-    if (!user || (user.type !== 'admin' && user.type !== 'practitioner'))
+    if (
+      !user ||
+      (!ADMIN_ACCESS_ROLES.includes(user.type as Role) &&
+        user.type !== Role.PRACTITIONER)
+    )
       throw new UnauthorizedException(
         'You are not authorized to perform this action',
       );
@@ -119,7 +123,7 @@ export class UserService {
       };
     }
 
-    if (user.type === 'admin') {
+    if (ADMIN_ACCESS_ROLES.includes(user.type as Role)) {
       if (role && role !== 'all') {
         where.type = role;
       }

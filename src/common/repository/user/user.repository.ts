@@ -12,6 +12,8 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { SojebStorage } from '../../lib/Disk/SojebStorage';
 
+const CREATABLE_USER_TYPES = [Role.ADMIN, Role.USER, Role.PRACTITIONER];
+
 @Injectable()
 export class UserRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -94,10 +96,76 @@ export class UserRepository {
           username: username,
           email: email,
           password: password,
-          type: 'admin',
+          type: Role.SU_ADMIN,
         },
       });
       return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Create or update the seeded system admin user.
+   * Keeps env changes in sync when seed is run again.
+   */
+  async syncSuAdminUser({ username, email, password }) {
+    try {
+      const hashedPassword = await bcrypt.hash(
+        password,
+        appConfig().security.salt,
+      );
+
+      let existingUser = await this.prisma.user.findFirst({
+        where: {
+          type: Role.SU_ADMIN,
+        },
+        orderBy: {
+          created_at: 'asc',
+        },
+      });
+
+      if (!existingUser) {
+        existingUser = await this.prisma.user.findFirst({
+          where: {
+            OR: [
+              {
+                email: email,
+              },
+              {
+                username: username,
+                type: Role.ADMIN,
+              },
+            ],
+          },
+          orderBy: {
+            created_at: 'asc',
+          },
+        });
+      }
+
+      if (existingUser) {
+        return await this.prisma.user.update({
+          where: {
+            id: existingUser.id,
+          },
+          data: {
+            username: username,
+            email: email,
+            password: hashedPassword,
+            type: Role.SU_ADMIN,
+          },
+        });
+      }
+
+      return await this.prisma.user.create({
+        data: {
+          username: username,
+          email: email,
+          password: hashedPassword,
+          type: Role.SU_ADMIN,
+        },
+      });
     } catch (error) {
       throw error;
     }
@@ -264,7 +332,7 @@ export class UserRepository {
       data['password'] = await bcrypt.hash(password, appConfig().security.salt);
     }
 
-    if (type && ArrayHelper.inArray(type, Object.values(Role))) {
+    if (type && ArrayHelper.inArray(type, CREATABLE_USER_TYPES)) {
       data['type'] = type;
 
       // if (type == Role.VENDOR) {
@@ -356,7 +424,7 @@ export class UserRepository {
       data['password'] = await bcrypt.hash(password, appConfig().security.salt);
     }
 
-    if (ArrayHelper.inArray(type, Object.values(Role))) {
+    if (ArrayHelper.inArray(type, CREATABLE_USER_TYPES)) {
       data['type'] = type;
     } else {
       return {

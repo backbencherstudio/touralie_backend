@@ -139,7 +139,7 @@ async function bootstrap() {
               }
 
               var key =
-                type === 'admin'
+                type === 'admin' || type === 'su_admin'
                   ? 'admin_token'
                   : type === 'practitioner'
                     ? 'practitioner_token'

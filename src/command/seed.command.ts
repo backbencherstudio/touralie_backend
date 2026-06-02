@@ -40,22 +40,12 @@ export class SeedCommand extends CommandRunner {
 
   //---- user section ----
   async userSeed() {
-    const email = appConfig().defaultUser.system.email;
-    const existingUser = await this.userRepository.getUserByEmail(email);
-
-    if (existingUser) {
-      console.log(
-        `User with email ${email} already exists. Skipping creation.`,
-      );
-      return;
-    }
-
-    // system admin, user id: 1
-    const systemUser = await this.userRepository.createSuAdminUser({
+    const systemUser = await this.userRepository.syncSuAdminUser({
       username: appConfig().defaultUser.system.username,
       email: appConfig().defaultUser.system.email,
       password: appConfig().defaultUser.system.password,
     });
+    console.log(`System admin synced: ${systemUser.email}`);
 
     // await this.prisma.roleUser.create({
     //   data: {

@@ -101,11 +101,11 @@ export class QueryUserDto extends IntersectionType(
 
   @ApiProperty({
     description: 'User role',
-    enum: ['all', 'practitioner', 'user', 'admin'],
+    enum: ['all', 'practitioner', 'user', 'admin', 'su_admin'],
     example: 'all',
     required: false,
   })
   @IsOptional()
-  @IsEnum(['all', 'practitioner', 'user', 'admin'])
-  role: 'all' | 'practitioner' | 'user' | 'admin' = 'all';
+  @IsEnum(['all', 'practitioner', 'user', 'admin', 'su_admin'])
+  role: 'all' | 'practitioner' | 'user' | 'admin' | 'su_admin' = 'all';
 }

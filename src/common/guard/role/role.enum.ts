@@ -1,6 +1,8 @@
 export enum Role {
-  // SUPERADMIN = 'superadmin',
+  SU_ADMIN = 'su_admin',
   ADMIN = 'admin',
   USER = 'user',
   PRACTITIONER = 'practitioner',
 }
+
+export const ADMIN_ACCESS_ROLES = [Role.SU_ADMIN, Role.ADMIN];
