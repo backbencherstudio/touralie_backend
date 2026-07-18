@@ -30,6 +30,8 @@ export class PaginationQueryDto {
   limit: number = 10;
 }
 
+import { MediaType } from 'prisma/generated/enums';
+
 export class PublicFiltersQueryDto {
   @ApiProperty({
     description: 'Start date (format: YYYY-MM-DD)',
@@ -61,6 +63,16 @@ export class PublicFiltersQueryDto {
   @IsOptional()
   @IsString()
   category_id?: string;
+
+  @ApiProperty({
+    description: 'Media type of the item',
+    enum: MediaType,
+    example: MediaType.VIDEO,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(MediaType)
+  media_type?: MediaType;
 }
 
 export class QueryPublicLibraryDto extends IntersectionType(

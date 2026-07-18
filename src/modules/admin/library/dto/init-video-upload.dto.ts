@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateIf } from 'class-validator';
 import { type } from 'os';
-import { VideoType, Visibility } from 'prisma/generated/enums';
+import { VideoType, Visibility, MediaType } from 'prisma/generated/enums';
 
 export class InitVideoUploadDto {
   @ApiProperty({
@@ -37,6 +37,16 @@ export class InitVideoUploadDto {
   @IsOptional()
   @IsEnum(Visibility)
   visibility?: Visibility = Visibility.PUBLIC;
+
+  @ApiProperty({
+    description: 'Media type (defaults to inference from filename extension if not provided)',
+    required: false,
+    enum: MediaType,
+    example: MediaType.VIDEO,
+  })
+  @IsOptional()
+  @IsEnum(MediaType)
+  media_type?: MediaType;
 
   @ApiProperty({
     description: 'Thumbnail image',

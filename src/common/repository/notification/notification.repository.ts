@@ -40,7 +40,9 @@ export class NotificationRepository {
       | 'payment_transaction'
       | 'auth'
       | 'membership_lead'
-      | 'prescription';
+      | 'prescription'
+      | 'library'
+      | 'media';
     entity_id?: string;
   }) {
     const notificationEventData = {};

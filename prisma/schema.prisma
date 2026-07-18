@@ -503,24 +503,34 @@ enum Visibility {
   LISTED
 }
 
+enum MediaType {
+  VIDEO
+  IMAGE
+  PDF
+}
+
 model Video {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  title         String?
+  title       String?
+  description String?
+
   url           String?
   thumbnail_url String?
-  description   String?
-  // level         Level?
-  category_id   String?
-  status        VideoStatus @default(UPLOADING)
-  duration      Int? // in seconds
-  type          VideoType   @default(OTHER)
-  visibility    Visibility  @default(PRIVATE)
 
-  category               Category?              @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  media_type MediaType @default(VIDEO)
+
+  category_id String?
+  status      VideoStatus @default(UPLOADING)
+  duration    Int?
+  type        VideoType   @default(OTHER)
+  visibility  Visibility  @default(PRIVATE)
+
+  category Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+
   users                  User[]
   favorite_videos        FavoriteVideo[]
   watch_histories        WatchHistory[]

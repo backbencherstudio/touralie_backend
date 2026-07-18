@@ -4,18 +4,20 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import appConfig from '../../../config/app.config';
 import { InitVideoUploadDto } from './dto/init-video-upload.dto';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
-import { VideoStatus } from 'prisma/generated/enums';
+import { VideoStatus, MediaType, VideoType, Visibility } from 'prisma/generated/enums';
 import { LibraryQueryStatus, QueryLibraryDto } from './dto/query-library.dto';
 import { Prisma } from 'prisma/generated/client';
 import { CreateCategoryDto } from './dto/create-category.dto';
 
 import { ActivityRepository } from 'src/common/repository/activity/activity.repository';
+import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
 
 @Injectable()
 export class LibraryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityRepository: ActivityRepository,
+    private readonly notificationRepository: NotificationRepository,
   ) {}
 
   async initUpload(
@@ -26,8 +28,14 @@ export class LibraryService {
     const extension = filename.split('.').pop();
     const key = `${appConfig().storageUrl.tempVideo}${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
 
+    const mediaType = initVideoUploadDto.media_type || this.getMediaTypeFromFilename(filename);
+
+    if (initVideoUploadDto.type === VideoType.PRESCRIBABLE && mediaType !== MediaType.VIDEO) {
+      throw new Error('Prescribable library items must be videos');
+    }
+
     let thumbnailUrl = null;
-    if (thumbnailFile) {
+    if (mediaType === MediaType.VIDEO && thumbnailFile) {
       const thumbExtension = thumbnailFile.originalname.split('.').pop();
       const thumbKey = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
       await SojebStorage.put(
@@ -44,15 +52,16 @@ export class LibraryService {
         url: key,
         status: VideoStatus.UPLOADING,
         thumbnail_url: thumbnailUrl,
-        duration: initVideoUploadDto.duration || 0,
+        duration: mediaType === MediaType.VIDEO ? (initVideoUploadDto.duration || 0) : null,
         type: initVideoUploadDto.type,
         visibility: initVideoUploadDto.visibility,
+        media_type: mediaType,
       },
     });
 
     await this.activityRepository.createActivity(
-      'Video Upload Started',
-      `A new video upload has been initiated.`,
+      'Media Upload Started',
+      `A new media upload has been initiated. Type: ${mediaType}`,
     );
 
     const uploadUrl = await SojebStorage.getSignedUrl(
@@ -63,11 +72,12 @@ export class LibraryService {
 
     return {
       success: true,
-      message: 'Video upload initialized successfully',
+      message: 'Media upload initialized successfully',
       data: {
         video_id: video.id,
         upload_url: uploadUrl,
         status: video.status,
+        media_type: video.media_type,
         thumbnail_url: video.thumbnail_url
           ? SojebStorage.url(video.thumbnail_url)
           : null,
@@ -87,24 +97,35 @@ export class LibraryService {
     const extension = filename.split('.').pop();
     const key = `${appConfig().storageUrl.tempVideo}${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
 
+    const mediaType = initVideoUploadDto.media_type || this.getMediaTypeFromFilename(filename);
+
+    if ((initVideoUploadDto.type || existingVideo.type) === VideoType.PRESCRIBABLE && mediaType !== MediaType.VIDEO) {
+      throw new Error('Prescribable library items must be videos');
+    }
+
     let thumbnailUrl = existingVideo.thumbnail_url;
 
-    if (thumbnailFile) {
-      // Delete old thumbnail if it exists
-      if (existingVideo.thumbnail_url) {
-        try {
-          await SojebStorage.delete(existingVideo.thumbnail_url);
-        } catch (e) {}
-      }
+    if (mediaType === MediaType.VIDEO) {
+      if (thumbnailFile) {
+        // Delete old thumbnail if it exists
+        if (existingVideo.thumbnail_url) {
+          try {
+            await SojebStorage.delete(existingVideo.thumbnail_url);
+          } catch (e) {}
+        }
 
-      const thumbExtension = thumbnailFile.originalname.split('.').pop();
-      const thumbKey = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
-      await SojebStorage.put(
-        thumbKey,
-        thumbnailFile.buffer,
-        thumbnailFile.mimetype,
-      );
-      thumbnailUrl = thumbKey;
+        const thumbExtension = thumbnailFile.originalname.split('.').pop();
+        const thumbKey = `${appConfig().storageUrl.thumbnail}${Date.now()}-${Math.random().toString(36).substring(7)}.${thumbExtension}`;
+        await SojebStorage.put(
+          thumbKey,
+          thumbnailFile.buffer,
+          thumbnailFile.mimetype,
+        );
+        thumbnailUrl = thumbKey;
+      }
+    } else {
+      // For non-videos, we should not have a thumbnail
+      thumbnailUrl = null;
     }
 
     const updatedVideo = await this.prisma.video.update({
@@ -113,15 +134,16 @@ export class LibraryService {
         url: key,
         status: VideoStatus.UPLOADING,
         thumbnail_url: thumbnailUrl,
-        duration: initVideoUploadDto.duration ?? existingVideo.duration,
+        duration: mediaType === MediaType.VIDEO ? (initVideoUploadDto.duration ?? existingVideo.duration) : null,
         type: initVideoUploadDto.type ?? existingVideo.type,
         visibility: initVideoUploadDto.visibility ?? existingVideo.visibility,
+        media_type: mediaType,
       },
     });
 
     await this.activityRepository.createActivity(
-      'Video Re-upload Started',
-      `Re-upload initiated for video "${existingVideo.title || 'Untitled'}".`,
+      'Media Re-upload Started',
+      `Re-upload initiated for media "${existingVideo.title || 'Untitled'}".`,
     );
 
     const uploadUrl = await SojebStorage.getSignedUrl(
@@ -132,11 +154,12 @@ export class LibraryService {
 
     return {
       success: true,
-      message: 'Video upload re-initialized successfully',
+      message: 'Media upload re-initialized successfully',
       data: {
         video_id: id,
         upload_url: uploadUrl,
         status: updatedVideo.status,
+        media_type: updatedVideo.media_type,
         thumbnail_url: updatedVideo.thumbnail_url
           ? SojebStorage.url(updatedVideo.thumbnail_url)
           : null,
@@ -164,13 +187,13 @@ export class LibraryService {
       });
 
       await this.activityRepository.createActivity(
-        'Video Upload Completed',
-        `Video "${updatedVideo.title || 'Untitled'}" upload has been completed and is now in draft.`,
+        'Media Upload Completed',
+        `Media "${updatedVideo.title || 'Untitled'}" upload has been completed and is now in draft.`,
       );
 
       return {
         success: true,
-        message: 'Video upload completed successfully',
+        message: 'Media upload completed successfully',
         data: {
           ...updatedVideo,
           url: updatedVideo.url ? SojebStorage.url(updatedVideo.url) : null,
@@ -183,7 +206,7 @@ export class LibraryService {
 
     return {
       success: true,
-      message: 'Video upload completed successfully',
+      message: 'Media upload completed successfully',
       data: {
         ...video,
         url: video.url ? SojebStorage.url(video.url) : null,
@@ -249,6 +272,7 @@ export class LibraryService {
       status,
       category_id,
       type,
+      media_type,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -275,6 +299,10 @@ export class LibraryService {
       where.type = type;
     }
 
+    if (media_type) {
+      where.media_type = media_type;
+    }
+
     if (start_date && end_date) {
       where.created_at = {
         gte: start_date,
@@ -292,6 +320,7 @@ export class LibraryService {
         type: true,
         visibility: true,
         status: true,
+        media_type: true,
         category: {
           select: {
             id: true,
@@ -315,6 +344,7 @@ export class LibraryService {
       duration: video.duration,
       created_at: video.created_at,
       status: video.status,
+      media_type: video.media_type,
       thumbnail_url: video.thumbnail_url
         ? SojebStorage.url(video.thumbnail_url)
         : null,
@@ -336,6 +366,7 @@ export class LibraryService {
           category_id,
           start_date,
           end_date,
+          media_type,
         },
       },
     };
@@ -353,6 +384,7 @@ export class LibraryService {
         thumbnail_url: true,
         type: true,
         visibility: true,
+        media_type: true,
         users: {
           select: {
             id: true,
@@ -438,8 +470,8 @@ export class LibraryService {
     delete data.user_ids;
 
     await this.activityRepository.createActivity(
-      'Video Updated',
-      `Video "${video.title}" metadata has been updated.`,
+      'Media Updated',
+      `Media "${video.title}" metadata has been updated.`,
     );
     const updatedVideo = await this.prisma.video.update({
       where: { id },
@@ -458,6 +490,7 @@ export class LibraryService {
         thumbnail_url: true,
         type: true,
         visibility: true,
+        media_type: true,
         users: {
           select: {
             id: true,
@@ -475,9 +508,63 @@ export class LibraryService {
         },
       },
     });
+
+    // Send notifications if the media status transitioned to PUBLISHED and type is OTHER
+    if (
+      video.status !== VideoStatus.PUBLISHED &&
+      updatedVideo.status === VideoStatus.PUBLISHED &&
+      updatedVideo.type === VideoType.OTHER
+    ) {
+      const title = updatedVideo.title || 'Untitled';
+      const mediaType = updatedVideo.media_type;
+      const id = updatedVideo.id;
+
+      if (updatedVideo.visibility === Visibility.PUBLIC) {
+        const usersToNotify = await this.prisma.user.findMany({
+          where: {
+            deleted_at: null,
+            type: 'user',
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        for (const u of usersToNotify) {
+          try {
+            await this.notificationRepository.createNotification({
+              receiver_id: u.id,
+              title: 'New Library Content Published',
+              description: `A new ${mediaType.toLowerCase()} titled "${title}" is now available.`,
+              type: 'library',
+              entity_id: id,
+            });
+          } catch (err) {
+            console.error(`Failed to send notification to user ${u.id}:`, err);
+          }
+        }
+      } else if (updatedVideo.visibility === Visibility.LISTED) {
+        const userIdsToNotify = updatedVideo.users.map((u) => u.id);
+
+        for (const uId of userIdsToNotify) {
+          try {
+            await this.notificationRepository.createNotification({
+              receiver_id: uId,
+              title: 'New Library Content Assigned',
+              description: `A new ${mediaType.toLowerCase()} titled "${title}" has been assigned to you.`,
+              type: 'library',
+              entity_id: id,
+            });
+          } catch (err) {
+            console.error(`Failed to send notification to user ${uId}:`, err);
+          }
+        }
+      }
+    }
+
     return {
       success: true,
-      message: 'Video updated successfully',
+      message: 'Media updated successfully',
       data: {
         ...updatedVideo,
         users: updatedVideo.users?.map((user) => ({
@@ -710,6 +797,22 @@ export class LibraryService {
   //   return Number(time);
   // }
 
+  private getMediaTypeFromFilename(filename: string): MediaType {
+    const extension = filename.split('.').pop()?.toLowerCase();
+    const videoExtensions = ['mp4', 'mkv', 'mov', 'avi'];
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    const pdfExtensions = ['pdf'];
+
+    if (extension && videoExtensions.includes(extension)) {
+      return MediaType.VIDEO;
+    } else if (extension && imageExtensions.includes(extension)) {
+      return MediaType.IMAGE;
+    } else if (extension && pdfExtensions.includes(extension)) {
+      return MediaType.PDF;
+    }
+    return MediaType.VIDEO;
+  }
+
   private getContentType(filename: string): string {
     const extension = filename.split('.').pop()?.toLowerCase();
     const mimeTypes = {
@@ -721,6 +824,7 @@ export class LibraryService {
       jpeg: 'image/jpeg',
       png: 'image/png',
       webp: 'image/webp',
+      pdf: 'application/pdf',
     };
     return mimeTypes[extension] || 'application/octet-stream';
   }

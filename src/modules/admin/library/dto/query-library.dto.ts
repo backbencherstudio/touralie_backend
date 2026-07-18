@@ -7,7 +7,8 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { VideoType } from 'prisma/generated/enums';
+import { VideoType, MediaType } from 'prisma/generated/enums';
+
 
 export class PaginationQueryDto {
   @ApiProperty({
@@ -89,6 +90,16 @@ export class FiltersQueryDto {
   @IsOptional()
   @IsEnum(VideoType)
   type?: VideoType;
+
+  @ApiProperty({
+    description: 'Media type of the item',
+    enum: MediaType,
+    example: MediaType.VIDEO,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(MediaType)
+  media_type?: MediaType;
 }
 
 export class QueryLibraryDto extends IntersectionType(

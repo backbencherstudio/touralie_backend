@@ -5,7 +5,12 @@ import {
 } from './dto/query-library.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from 'prisma/generated/client';
-import { VideoStatus, VideoType, Visibility } from 'prisma/generated/enums';
+import {
+  VideoStatus,
+  VideoType,
+  Visibility,
+  MediaType,
+} from 'prisma/generated/enums';
 import { UpdateWatchProgressDto } from './dto/update-watch-progress.dto';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
@@ -14,7 +19,15 @@ export class LibraryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryPublicLibraryDto, userId?: string) {
-    const { page, limit, search, category_id, start_date, end_date } = query;
+    const {
+      page,
+      limit,
+      search,
+      category_id,
+      start_date,
+      end_date,
+      media_type,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.VideoWhereInput = {
@@ -58,6 +71,7 @@ export class LibraryService {
             ]
           : []),
         ...(category_id ? [{ category_id }] : []),
+        ...(media_type ? [{ media_type }] : []),
         ...(start_date || end_date
           ? [
               {
@@ -80,6 +94,7 @@ export class LibraryService {
           duration: true,
           created_at: true,
           thumbnail_url: true,
+          media_type: true,
           category: {
             select: {
               title: true,
@@ -111,6 +126,7 @@ export class LibraryService {
         ? SojebStorage.url(video.thumbnail_url)
         : null,
       category: video.category?.title ?? null,
+      media_type: video.media_type,
     }));
 
     return {
@@ -126,6 +142,7 @@ export class LibraryService {
           category_id,
           start_date,
           end_date,
+          media_type,
         },
       },
     };
@@ -244,7 +261,15 @@ export class LibraryService {
   }
 
   async findAllFavoriteVideos(query: QueryPublicLibraryDto, userId: string) {
-    const { page, limit, search, start_date, end_date, category_id } = query;
+    const {
+      page,
+      limit,
+      search,
+      start_date,
+      end_date,
+      category_id,
+      media_type,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.FavoriteVideoWhereInput = {
@@ -266,6 +291,10 @@ export class LibraryService {
       where.video.category_id = category_id;
     }
 
+    if (media_type) {
+      where.video.media_type = media_type;
+    }
+
     if (start_date || end_date) {
       where.video.created_at = {
         ...(start_date && { gte: start_date }),
@@ -284,6 +313,7 @@ export class LibraryService {
             duration: true,
             created_at: true,
             thumbnail_url: true,
+            media_type: true,
             category: true,
           },
         },
@@ -307,6 +337,7 @@ export class LibraryService {
         ? SojebStorage.url(video.video.thumbnail_url)
         : null,
       category: video?.video?.category?.title || null,
+      media_type: video?.video?.media_type,
     }));
 
     return {
@@ -322,6 +353,7 @@ export class LibraryService {
           category_id,
           start_date,
           end_date,
+          media_type,
         },
       },
     };
@@ -336,6 +368,7 @@ export class LibraryService {
       end_date,
       category_id,
       watch_status,
+      media_type,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -355,6 +388,10 @@ export class LibraryService {
 
     if (category_id) {
       where.video.category_id = category_id;
+    }
+
+    if (media_type) {
+      where.video.media_type = media_type;
     }
 
     if (start_date || end_date) {
@@ -385,6 +422,7 @@ export class LibraryService {
             duration: true,
             created_at: true,
             thumbnail_url: true,
+            media_type: true,
             category: true,
           },
         },
@@ -414,6 +452,7 @@ export class LibraryService {
         ? SojebStorage.url(video?.video?.thumbnail_url)
         : null,
       category: video?.video?.category?.title,
+      media_type: video?.video?.media_type,
     }));
 
     return {
@@ -429,6 +468,7 @@ export class LibraryService {
           category_id,
           start_date,
           end_date,
+          media_type,
         },
       },
     };
@@ -445,6 +485,7 @@ export class LibraryService {
         created_at: true,
         url: true,
         thumbnail_url: true,
+        media_type: true,
         category: {
           select: {
             id: true,
@@ -509,6 +550,7 @@ export class LibraryService {
         ? SojebStorage.url(video.thumbnail_url)
         : null,
       category: video.category?.title,
+      media_type: video.media_type,
     };
 
     return {
