@@ -229,8 +229,8 @@ export class AuthService {
   }) {
     const payload = { email: email, sub: userId };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '30d' });
 
     const user = await this.userRepository.getUserDetails(userId);
 
@@ -293,7 +293,7 @@ export class AuthService {
       }
 
       const payload = { email: userDetails.email, sub: userDetails.id };
-      const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+      const accessToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
       return {
         success: true,

@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UpdateLibraryDto } from './dto/update-library.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import appConfig from '../../../config/app.config';
@@ -90,9 +94,14 @@ export class LibraryService {
         upload_url: uploadUrl,
         status: video.status,
         media_type: video.media_type,
-        thumbnail_url: video.thumbnail_url
-          ? SojebStorage.url(video.thumbnail_url)
-          : null,
+        thumbnail_url:
+          video.thumbnail_url ||
+          (video.media_type === MediaType.IMAGE ? video.url : null)
+            ? SojebStorage.url(
+                video.thumbnail_url ||
+                  (video.media_type === MediaType.IMAGE ? video.url : null),
+              )
+            : null,
       },
     };
   }
@@ -180,23 +189,42 @@ export class LibraryService {
         upload_url: uploadUrl,
         status: updatedVideo.status,
         media_type: updatedVideo.media_type,
-        thumbnail_url: updatedVideo.thumbnail_url
-          ? SojebStorage.url(updatedVideo.thumbnail_url)
-          : null,
+        thumbnail_url:
+          updatedVideo.thumbnail_url ||
+          (updatedVideo.media_type === MediaType.IMAGE
+            ? updatedVideo.url
+            : null)
+            ? SojebStorage.url(
+                updatedVideo.thumbnail_url ||
+                  (updatedVideo.media_type === MediaType.IMAGE
+                    ? updatedVideo.url
+                    : null),
+              )
+            : null,
       },
     };
   }
 
   async completeUpload(id: string) {
     const video = await this.prisma.video.findUnique({ where: { id } });
-    if (!video || !video.url) throw new Error('Video not found or invalid URL');
+    if (!video || !video.url) {
+      throw new NotFoundException('Media item not found or invalid URL');
+    }
 
     const tempPrefix = appConfig().storageUrl.tempVideo;
     const permanentPrefix = appConfig().storageUrl.video;
 
     if (video.url.startsWith(tempPrefix)) {
       const permanentKey = video.url.replace(tempPrefix, permanentPrefix);
-      await SojebStorage.move(video.url, permanentKey);
+
+      try {
+        await SojebStorage.move(video.url, permanentKey);
+      } catch (err) {
+        console.error('Failed to move uploaded file in storage:', err);
+        throw new BadRequestException(
+          'File not found in storage. Please ensure the file upload to storage completed before calling complete-upload.',
+        );
+      }
 
       const updatedVideo = await this.prisma.video.update({
         where: { id },
@@ -211,18 +239,24 @@ export class LibraryService {
         `Media "${updatedVideo.title || 'Untitled'}" upload has been completed and is now in draft.`,
       );
 
+      const rawThumb =
+        updatedVideo.thumbnail_url ||
+        (updatedVideo.media_type === MediaType.IMAGE ? updatedVideo.url : null);
+
       return {
         success: true,
         message: 'Media upload completed successfully',
         data: {
           ...updatedVideo,
           url: updatedVideo.url ? SojebStorage.url(updatedVideo.url) : null,
-          thumbnail_url: updatedVideo.thumbnail_url
-            ? SojebStorage.url(updatedVideo.thumbnail_url)
-            : null,
+          thumbnail_url: rawThumb ? SojebStorage.url(rawThumb) : null,
         },
       };
     }
+
+    const rawThumb =
+      video.thumbnail_url ||
+      (video.media_type === MediaType.IMAGE ? video.url : null);
 
     return {
       success: true,
@@ -230,9 +264,7 @@ export class LibraryService {
       data: {
         ...video,
         url: video.url ? SojebStorage.url(video.url) : null,
-        thumbnail_url: video.thumbnail_url
-          ? SojebStorage.url(video.thumbnail_url)
-          : null,
+        thumbnail_url: rawThumb ? SojebStorage.url(rawThumb) : null,
       },
     };
   }
@@ -336,6 +368,7 @@ export class LibraryService {
         title: true,
         duration: true,
         created_at: true,
+        url: true,
         thumbnail_url: true,
         type: true,
         visibility: true,
@@ -358,18 +391,21 @@ export class LibraryService {
 
     const total = await this.prisma.video.count({ where });
 
-    const formattedVideos = videos.map((video) => ({
-      id: video.id,
-      title: video.title,
-      duration: video.duration,
-      created_at: video.created_at,
-      status: video.status,
-      media_type: video.media_type,
-      thumbnail_url: video.thumbnail_url
-        ? SojebStorage.url(video.thumbnail_url)
-        : null,
-      category: video.category?.title,
-    }));
+    const formattedVideos = videos.map((video) => {
+      const rawThumb =
+        video.thumbnail_url ||
+        (video.media_type === MediaType.IMAGE ? video.url : null);
+      return {
+        id: video.id,
+        title: video.title,
+        duration: video.duration,
+        created_at: video.created_at,
+        status: video.status,
+        media_type: video.media_type,
+        thumbnail_url: rawThumb ? SojebStorage.url(rawThumb) : null,
+        category: video.category?.title,
+      };
+    });
 
     return {
       success: true,
@@ -425,10 +461,11 @@ export class LibraryService {
     });
 
     if (video) {
+      const rawThumb =
+        video.thumbnail_url ||
+        (video.media_type === MediaType.IMAGE ? video.url : null);
       video.url = video.url ? SojebStorage.url(video.url) : null;
-      video.thumbnail_url = video.thumbnail_url
-        ? SojebStorage.url(video.thumbnail_url)
-        : null;
+      video.thumbnail_url = rawThumb ? SojebStorage.url(rawThumb) : null;
     }
 
     return {
@@ -489,6 +526,36 @@ export class LibraryService {
     const user_ids = data.user_ids;
     delete data.user_ids;
 
+    // Validate category_id if provided
+    if (data.category_id) {
+      const categoryExists = await this.prisma.category.findUnique({
+        where: { id: data.category_id },
+      });
+      if (!categoryExists) {
+        throw new BadRequestException(
+          `Category with ID "${data.category_id}" does not exist`,
+        );
+      }
+    }
+
+    // Safely validate user_ids if provided
+    let usersUpdate: any = undefined;
+    if (Array.isArray(user_ids)) {
+      const cleanIds = user_ids.filter(
+        (uid: string) => uid && typeof uid === 'string' && uid.trim() !== '',
+      );
+      if (cleanIds.length > 0) {
+        const existingUsers = await this.prisma.user.findMany({
+          where: { id: { in: cleanIds }, deleted_at: null },
+          select: { id: true },
+        });
+        const validIds = existingUsers.map((u) => u.id);
+        usersUpdate = { set: validIds.map((id) => ({ id })) };
+      } else {
+        usersUpdate = { set: [] };
+      }
+    }
+
     await this.activityRepository.createActivity(
       'Media Updated',
       `Media "${video.title}" metadata has been updated.`,
@@ -497,9 +564,7 @@ export class LibraryService {
       where: { id },
       data: {
         ...data,
-        users: {
-          set: user_ids?.map((id: string) => ({ id })) || [],
-        },
+        ...(usersUpdate ? { users: usersUpdate } : {}),
       },
       select: {
         id: true,
@@ -592,9 +657,18 @@ export class LibraryService {
           avatar: user.avatar ? SojebStorage.url(user.avatar) : null,
         })),
         url: updatedVideo.url ? SojebStorage.url(updatedVideo.url) : null,
-        thumbnail_url: updatedVideo.thumbnail_url
-          ? SojebStorage.url(updatedVideo.thumbnail_url)
-          : null,
+        thumbnail_url:
+          updatedVideo.thumbnail_url ||
+          (updatedVideo.media_type === MediaType.IMAGE
+            ? updatedVideo.url
+            : null)
+            ? SojebStorage.url(
+                updatedVideo.thumbnail_url ||
+                  (updatedVideo.media_type === MediaType.IMAGE
+                    ? updatedVideo.url
+                    : null),
+              )
+            : null,
       },
     };
   }

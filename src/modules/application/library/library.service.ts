@@ -93,6 +93,7 @@ export class LibraryService {
           title: true,
           duration: true,
           created_at: true,
+          url: true,
           thumbnail_url: true,
           media_type: true,
           category: {
@@ -116,18 +117,21 @@ export class LibraryService {
       this.prisma.video.count({ where }),
     ]);
 
-    const formattedVideos = videos.map((video) => ({
-      id: video.id,
-      title: video.title,
-      duration: video.duration,
-      created_at: video.created_at,
-      is_favorite: userId ? (video as any).favorite_videos.length > 0 : false,
-      thumbnail_url: video.thumbnail_url
-        ? SojebStorage.url(video.thumbnail_url)
-        : null,
-      category: video.category?.title ?? null,
-      media_type: video.media_type,
-    }));
+    const formattedVideos = videos.map((video) => {
+      const rawThumb =
+        video.thumbnail_url ||
+        (video.media_type === MediaType.IMAGE ? video.url : null);
+      return {
+        id: video.id,
+        title: video.title,
+        duration: video.duration,
+        created_at: video.created_at,
+        is_favorite: userId ? (video as any).favorite_videos.length > 0 : false,
+        thumbnail_url: rawThumb ? SojebStorage.url(rawThumb) : null,
+        category: video.category?.title ?? null,
+        media_type: video.media_type,
+      };
+    });
 
     return {
       success: true,
@@ -312,6 +316,7 @@ export class LibraryService {
             title: true,
             duration: true,
             created_at: true,
+            url: true,
             thumbnail_url: true,
             media_type: true,
             category: true,
@@ -327,18 +332,23 @@ export class LibraryService {
 
     const total = await this.prisma.favoriteVideo.count({ where });
 
-    const formattedVideos = favoriteVideo.map((video) => ({
-      id: video.video.id,
-      title: video.video.title,
-      duration: video.video.duration,
-      created_at: video.video.created_at,
-      is_favorite: true,
-      thumbnail_url: video.video.thumbnail_url
-        ? SojebStorage.url(video.video.thumbnail_url)
-        : null,
-      category: video?.video?.category?.title || null,
-      media_type: video?.video?.media_type,
-    }));
+    const formattedVideos = favoriteVideo.map((video) => {
+      const rawThumb =
+        video?.video?.thumbnail_url ||
+        (video?.video?.media_type === MediaType.IMAGE
+          ? video?.video?.url
+          : null);
+      return {
+        id: video.video.id,
+        title: video.video.title,
+        duration: video.video.duration,
+        created_at: video.video.created_at,
+        is_favorite: true,
+        thumbnail_url: rawThumb ? SojebStorage.url(rawThumb) : null,
+        category: video?.video?.category?.title || null,
+        media_type: video?.video?.media_type,
+      };
+    });
 
     return {
       success: true,
@@ -421,6 +431,7 @@ export class LibraryService {
             title: true,
             duration: true,
             created_at: true,
+            url: true,
             thumbnail_url: true,
             media_type: true,
             category: true,
@@ -436,24 +447,34 @@ export class LibraryService {
 
     const total = await this.prisma.watchHistory.count({ where });
 
-    const formattedVideos = watchHistory.map((video) => ({
-      id: video?.video?.id,
-      title: video?.video?.title,
-      duration: video?.video?.duration,
-      created_at: video?.video?.created_at,
-      watch_status: video?.is_completed
-        ? 'COMPLETED'
-        : video?.last_played_position > 0
-          ? 'IN_PROGRESS'
-          : 'NOT_STARTED',
-      is_completed: video?.is_completed,
-      last_played_position: video?.last_played_position,
-      thumbnail_url: video?.video?.thumbnail_url
-        ? SojebStorage.url(video?.video?.thumbnail_url)
-        : null,
-      category: video?.video?.category?.title,
-      media_type: video?.video?.media_type,
-    }));
+    const formattedVideos = watchHistory.map((video) => {
+      const rawThumb =
+        video?.video?.thumbnail_url ||
+        (video?.video?.media_type === MediaType.IMAGE
+          ? video?.video?.url
+          : null);
+      return {
+        id: video?.video?.id,
+        title: video?.video?.title,
+        duration:
+          video?.video?.media_type === MediaType.VIDEO
+            ? video?.video?.duration
+            : null,
+        created_at: video?.video?.created_at,
+        ...(video?.video?.media_type === MediaType.VIDEO && {
+          watch_status: video?.is_completed
+            ? 'COMPLETED'
+            : video?.last_played_position > 0
+              ? 'IN_PROGRESS'
+              : 'NOT_STARTED',
+          is_completed: video?.is_completed,
+          last_played_position: video?.last_played_position,
+        }),
+        thumbnail_url: rawThumb ? SojebStorage.url(rawThumb) : null,
+        category: video?.video?.category?.title,
+        media_type: video?.video?.media_type,
+      };
+    });
 
     return {
       success: true,
@@ -507,10 +528,11 @@ export class LibraryService {
       is_favorite = !!favorite;
     }
 
-    let last_watch_position = 0;
-    let is_completed = false;
+    let last_watch_position: number | null = null;
+    let is_completed: boolean | null = null;
 
-    if (userId) {
+    // Watch history only applies to VIDEO media type
+    if (userId && video.media_type === MediaType.VIDEO) {
       const watchHistory = await this.prisma.watchHistory.findFirst({
         where: { video_id: id, user_id: userId },
       });
@@ -533,29 +555,35 @@ export class LibraryService {
             is_completed: false,
           },
         });
+        last_watch_position = 0;
+        is_completed = false;
       }
     }
+
+    const rawThumb =
+      video.thumbnail_url ||
+      (video.media_type === MediaType.IMAGE ? video.url : null);
 
     const formattedVideo = {
       id: video.id,
       title: video.title,
       description: video.description,
-      duration: video.duration,
+      duration: video.media_type === MediaType.VIDEO ? video.duration : null,
       created_at: video.created_at,
       is_favorite,
-      last_watch_position,
-      is_completed,
+      ...(video.media_type === MediaType.VIDEO && {
+        last_watch_position,
+        is_completed,
+      }),
       url: video.url ? SojebStorage.url(video.url) : null,
-      thumbnail_url: video.thumbnail_url
-        ? SojebStorage.url(video.thumbnail_url)
-        : null,
+      thumbnail_url: rawThumb ? SojebStorage.url(rawThumb) : null,
       category: video.category?.title,
       media_type: video.media_type,
     };
 
     return {
       success: true,
-      message: 'Video found successfully',
+      message: 'Media found successfully',
       data: formattedVideo,
     };
   }

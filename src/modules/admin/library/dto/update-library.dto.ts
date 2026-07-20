@@ -62,7 +62,21 @@ export class UpdateLibraryDto {
   })
   @IsOptional()
   @Transform(({ value }) => {
-    if (typeof value === 'string') return [value];
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return undefined;
+      if (trimmed.startsWith('[')) {
+        try {
+          return JSON.parse(trimmed);
+        } catch (e) {}
+      }
+      return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    if (Array.isArray(value)) {
+      return value
+        .map((s) => (typeof s === 'string' ? s.trim() : s))
+        .filter(Boolean);
+    }
     return value;
   })
   @IsArray()

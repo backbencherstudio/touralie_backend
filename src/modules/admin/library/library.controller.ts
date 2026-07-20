@@ -43,34 +43,29 @@ export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
   @ApiOperation({
-    summary: 'Phase 1: Initialize video upload (Admin & Practitioner Only)',
+    summary: 'Phase 1: Initialize media upload (Admin & Practitioner Only)',
     description:
-      'Step 1 of the multi-phase upload flow. Takes the filename and an optional thumbnail image (multipart). Returns a pre-signed S3/MinIO URL for direct client-side upload and a unique video ID.\n\n' +
-      '**Manual Upload Steps:**\n' +
+      'Step 1 of the multi-phase upload flow. Supports VIDEO, IMAGE, and PDF files.\n\n' +
+      'For **VIDEO** (`type: PRESCRIBABLE` or `type: OTHER`, `media_type: VIDEO`): An optional thumbnail can be uploaded.\n' +
+      'For **IMAGE** or **PDF** (`type: OTHER`, `media_type: IMAGE` or `media_type: PDF`): Thumbnail and duration are ignored.\n\n' +
+      '**Upload Steps:**\n' +
       '1. Get `upload_url` from this response.\n' +
-      '2. Make a `PUT` request to `upload_url` with the video file binary in the body.\n' +
-      '3. Set `Content-Type` header to match the video type (e.g., `video/mp4`).\n' +
-      '4. After the upload to MinIO is finished, call `PATCH /admin/library/{video_id}/complete-upload` to finalize.',
+      '2. `PUT` the file binary to `upload_url` with the correct `Content-Type`.\n' +
+      '3. Call `PATCH /admin/library/{video_id}/complete-upload` to finalize.',
   })
   @ApiResponse({
     status: 201,
-    description: 'Success - Pre-signed URL generated',
+    description: 'Pre-signed upload URL generated',
     schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: {
-          type: 'string',
-          example: 'Video upload initialized successfully',
-        },
+      example: {
+        success: true,
+        message: 'Media upload initialized successfully',
         data: {
-          type: 'object',
-          properties: {
-            video_id: { type: 'string', example: 'clz123' },
-            upload_url: { type: 'string', example: 'https://storage...' },
-            status: { type: 'string', example: 'UPLOADING' },
-            thumbnail_url: { type: 'string', example: 'thumbnail/abc.jpg' },
-          },
+          video_id: 'cm9abc123xyz',
+          upload_url: 'https://storage.example.com/presigned?token=...',
+          status: 'UPLOADING',
+          media_type: 'VIDEO',
+          thumbnail_url: 'https://storage.example.com/thumbnails/thumb_abc.jpg',
         },
       },
     },
@@ -253,49 +248,60 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Get all videos (Admin & Practitioner Only)',
-    description: 'Returns list of all videos in the library.',
+    summary: 'Get all library media (Admin & Practitioner Only)',
+    description:
+      'Returns paginated list of all media items (VIDEO, IMAGE, PDF). Filter by `type`, `media_type`, `status`, `category_id`, and date range.',
   })
   @ApiResponse({
     status: 200,
     schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Videos found successfully' },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              title: { type: 'string' },
-              thumbnail_url: { type: 'string' },
-              type: { type: 'string' },
-              visibility: { type: 'string' },
-              status: { type: 'string' },
-              category: { type: 'string' },
-              created_at: { type: 'string' },
-              duration: { type: 'number' },
-            },
+      example: {
+        success: true,
+        message: 'Videos found successfully',
+        data: [
+          {
+            id: 'cm9vid001',
+            title: 'Full Body Workout',
+            duration: 1800,
+            created_at: '2026-03-14T10:00:00.000Z',
+            status: 'PUBLISHED',
+            media_type: 'VIDEO',
+            thumbnail_url: 'https://storage.example.com/thumbnails/workout.jpg',
+            category: 'Fitness',
           },
-        },
+          {
+            id: 'cm9img002',
+            title: 'Exercise Posture Guide',
+            duration: null,
+            created_at: '2026-05-01T08:00:00.000Z',
+            status: 'PUBLISHED',
+            media_type: 'IMAGE',
+            thumbnail_url: null,
+            category: 'Education',
+          },
+          {
+            id: 'cm9pdf003',
+            title: 'Nutrition Handbook',
+            duration: null,
+            created_at: '2026-06-10T09:00:00.000Z',
+            status: 'DRAFT',
+            media_type: 'PDF',
+            thumbnail_url: null,
+            category: 'Nutrition',
+          },
+        ],
         meta_data: {
-          type: 'object',
-          properties: {
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            total: { type: 'number' },
-            search: { type: 'string' },
-            filters: {
-              type: 'object',
-              properties: {
-                status: { type: 'string' },
-                category_id: { type: 'string' },
-                start_date: { type: 'string' },
-                end_date: { type: 'string' },
-              },
-            },
+          page: 1,
+          limit: 10,
+          total: 3,
+          search: null,
+          filters: {
+            type: null,
+            status: 'ALL',
+            category_id: null,
+            start_date: null,
+            end_date: null,
+            media_type: null,
           },
         },
       },
@@ -307,61 +313,61 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Get single video by ID (Admin & Practitioner Only)',
-    description: 'Returns detailed video info including chapters.',
+    summary: 'Get single media item by ID (Admin & Practitioner Only)',
+    description:
+      'Returns full details for a media item. `duration` and `thumbnail_url` are `null` for IMAGE and PDF types.',
   })
   @ApiResponse({
     status: 200,
     schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Video found successfully' },
+      example: {
+        success: true,
+        message: 'Video found successfully',
         data: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            title: { type: 'string' },
-            description: { type: 'string' },
-            duration: { type: 'number' },
-            url: { type: 'string' },
-            thumbnail_url: { type: 'string' },
-            type: { type: 'string' },
-            visibility: { type: 'string' },
-            users: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  name: { type: 'string' },
-                  email: { type: 'string' },
-                  avatar: { type: 'string' },
-                },
-              },
+          id: 'cm9vid001',
+          title: 'Full Body Workout',
+          description: 'A comprehensive 30-min workout session.',
+          duration: 1800,
+          url: 'https://storage.example.com/videos/workout.mp4',
+          thumbnail_url: 'https://storage.example.com/thumbnails/workout.jpg',
+          type: 'OTHER',
+          visibility: 'PUBLIC',
+          media_type: 'VIDEO',
+          status: 'PUBLISHED',
+          users: [
+            {
+              id: 'usr001',
+              name: 'Jane Doe',
+              email: 'jane@example.com',
+              gender: 'female',
+              date_of_birth: '1990-01-01',
             },
-            status: { type: 'string' },
-            category: {
-              type: 'object',
-              properties: {
-                id: { type: 'string' },
-                title: { type: 'string' },
-              },
-            },
-            video_chapters: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  title: { type: 'string' },
-                  start_time: { type: 'string' },
-                  end_time: { type: 'string' },
-                  thumbnail_url: { type: 'string' },
-                },
-              },
-            },
-          },
+          ],
+          category: { id: 'cat001', title: 'Fitness' },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Example for IMAGE type',
+    schema: {
+      example: {
+        success: true,
+        message: 'Video found successfully',
+        data: {
+          id: 'cm9img002',
+          title: 'Exercise Posture Guide',
+          description: 'Visual reference for correct posture.',
+          duration: null,
+          url: 'https://storage.example.com/media/posture_guide.png',
+          thumbnail_url: null,
+          type: 'OTHER',
+          visibility: 'LISTED',
+          media_type: 'IMAGE',
+          status: 'PUBLISHED',
+          users: [{ id: 'usr002', name: 'John Smith', email: 'john@example.com', gender: 'male', date_of_birth: '1985-05-10' }],
+          category: { id: 'cat002', title: 'Education' },
         },
       },
     },

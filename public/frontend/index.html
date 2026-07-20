@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Touralie Video Tester</title>
+    <title>Touralie Media Library Tester</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
             --card: #ffffff;
             --text: #0f172a;
             --border: #e2e8f0;
-            --radius: 0.125rem; /* sm radius */
+            --radius: 0.25rem;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -109,11 +109,6 @@
             transition: width 0.3s ease;
         }
 
-        #responseContainer {
-            margin-top: 1rem;
-            display: none;
-        }
-
         pre {
             background: #1e293b;
             color: #38bdf8;
@@ -122,45 +117,40 @@
             font-size: 0.85rem;
             overflow-x: auto;
             max-height: 250px;
+            margin-top: 1rem;
         }
 
-        .video-container {
+        .preview-box {
             margin-top: 1rem;
             background: #000;
-            aspect-ratio: 16 / 9;
             border-radius: var(--radius);
             overflow: hidden;
+            display: none;
+            text-align: center;
         }
 
-        video { width: 100%; height: 100%; }
+        video, img, iframe { width: 100%; max-height: 400px; object-fit: contain; }
 
         .flex { display: flex; gap: 0.5rem; align-items: flex-end; }
         .flex > div { flex: 1; }
         .flex button { width: auto; }
-
-        .note {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-top: 0.5rem;
-        }
-
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Video System Tester (Fetch API)</h1>
+        <h1>Media Upload & Playback Tester</h1>
 
-        <!-- PHASE 2: UPLOAD -->
+        <!-- PHASE 2: UPLOAD TO STORAGE -->
         <div class="card">
-            <div class="card-title">1. Upload to Storage (PUT)</div>
+            <div class="card-title">1. Direct Upload to Storage (PUT)</div>
             <div class="form-group">
-                <label>Pre-signed Upload URL</label>
+                <label>Pre-signed Upload URL (from Swagger init-upload)</label>
                 <input type="text" id="uploadUrl" placeholder="Paste the upload_url from Swagger here...">
             </div>
             <div class="form-group">
-                <label>Select Video File</label>
-                <input type="file" id="videoFile" accept="video/*">
+                <label>Select Media File (Video, Image, or PDF)</label>
+                <input type="file" id="mediaFile" accept="video/*,image/*,.pdf">
             </div>
             <button id="uploadBtn" onclick="performUpload()">Upload to Storage</button>
 
@@ -168,49 +158,43 @@
                 <div class="progress-bar" id="progressBar"></div>
             </div>
 
-            <div id="uploadResponse" style="margin-top: 1rem; display: none;">
+            <div id="uploadResponse" style="display: none;">
                 <pre><code id="uploadCode"></code></pre>
             </div>
         </div>
 
-        <!-- PHASE 3: COMPLETE -->
+        <!-- PHASE 3: COMPLETE UPLOAD -->
         <div class="card">
             <div class="card-title">2. Complete Upload</div>
             <div class="form-group">
-                <label>Admin Token (Bearer)</label>
-                <input type="text" id="adminToken" placeholder="Paste your admin JWT token here...">
+                <label>Admin / Practitioner Token (Bearer)</label>
+                <input type="text" id="adminToken" placeholder="Paste your JWT token here...">
             </div>
             <div class="form-group">
-                <label>Video ID</label>
+                <label>Video / Media ID</label>
                 <input type="text" id="videoId" placeholder="Paste the video_id from Swagger response here...">
             </div>
-            <button onclick="completeUpload()">Complete Upload</button>
-            <div id="completeResponse" style="margin-top: 1rem; display: none;">
+            <button onclick="completeUpload()">Complete Upload (PATCH)</button>
+            <div id="completeResponse" style="display: none;">
                 <pre><code id="completeCode"></code></pre>
             </div>
         </div>
 
-        <!-- PLAYBACK SECTION -->
+        <!-- MEDIA PREVIEW -->
         <div class="card">
-            <div class="card-title">Video Playback & Chapter Test</div>
+            <div class="card-title">Media Preview</div>
             <div class="form-group">
-                <label>Video URL</label>
+                <label>Media URL (from complete-upload or get-one)</label>
                 <div class="flex">
-                    <div><input type="text" id="playUrl" placeholder="Enter video URL to play..."></div>
-                    <button onclick="loadVideo()" style="background: #10b981;">Play Video</button>
+                    <div><input type="text" id="playUrl" placeholder="Enter media URL to preview..."></div>
+                    <button onclick="loadMedia()" style="background: #10b981;">Preview</button>
                 </div>
             </div>
 
-            <div class="video-container">
-                <video id="videoPlayer" controls></video>
-            </div>
-
-            <div class="form-group" style="margin-top: 1.5rem;">
-                <label>Chapter Test (Start Time in Seconds)</label>
-                <div class="flex">
-                    <div><input type="number" id="startTime" placeholder="e.g. 30"></div>
-                    <button onclick="seekToTime()" style="background: #6366f1;">Jump to Time</button>
-                </div>
+            <div class="preview-box" id="previewContainer">
+                <video id="videoPlayer" controls style="display: none;"></video>
+                <img id="imagePreview" style="display: none;" alt="Preview">
+                <iframe id="pdfPreview" style="display: none; height: 450px;"></iframe>
             </div>
         </div>
     </div>
@@ -219,27 +203,23 @@
         const uploadBtn = document.getElementById('uploadBtn');
         const progressWrapper = document.getElementById('progressWrapper');
         const progressBar = document.getElementById('progressBar');
-        const responseContainer = document.getElementById('responseContainer');
-        const responseCode = document.getElementById('responseCode');
-        const videoPlayer = document.getElementById('videoPlayer');
-
 
         async function performUpload() {
             const url = document.getElementById('uploadUrl').value.trim();
-            const file = document.getElementById('videoFile').files[0];
+            const file = document.getElementById('mediaFile').files[0];
 
-            if (!url) return alert('Please enter or get the Upload URL.');
-            if (!file) return alert('Please select a video file.');
+            if (!url) return alert('Please enter the Pre-signed Upload URL.');
+            if (!file) return alert('Please select a file to upload.');
 
             uploadBtn.disabled = true;
             progressWrapper.style.display = 'block';
-            progressBar.style.width = '30%'; 
+            progressBar.style.width = '30%';
             document.getElementById('uploadResponse').style.display = 'none';
 
             try {
                 const arrayBuffer = await file.arrayBuffer();
                 const contentType = getContentType(file.name);
-                
+
                 const response = await fetch(url, {
                     method: 'PUT',
                     body: arrayBuffer,
@@ -256,31 +236,53 @@
                     ok: response.ok
                 };
 
-                document.getElementById('uploadCode').textContent = JSON.stringify(responseData, null, 2);
+                let extraInfo = '';
+                if (response.status === 405) {
+                    extraInfo = '\nNOTE: 405 Method Not Allowed usually happens if the pre-signed URL was generated for a different HTTP method, or if targeted at MinIO Web Console (port 9001) instead of MinIO S3 API (port 9000).';
+                }
+
+                document.getElementById('uploadCode').textContent = JSON.stringify(responseData, null, 2) + extraInfo;
 
                 if (response.ok) {
-                    alert('Phase 2 Success: Video uploaded to storage!');
+                    alert('Success: File uploaded to storage!');
                 } else {
                     const errorText = await response.text();
                     console.error('Upload error:', errorText);
-                    alert(`Upload failed: ${response.status}`);
+                    alert(`Upload failed: ${response.status} ${response.statusText}`);
                 }
             } catch (err) {
                 uploadBtn.disabled = false;
                 console.error('Fetch error:', err);
-                alert('Network/CORS error. Check console. If using MinIO locally, ensure CORS is enabled.');
+                alert('Network error or CORS issue when uploading to storage. Check browser console.');
             }
+        }
+
+        function getApiBase() {
+            const backendInput = document.getElementById('backendUrl')?.value.trim();
+            if (backendInput) return backendInput.replace(/\/+$/, '');
+            
+            // If opened via Live Server (e.g. port 5500), target NestJS backend on port 4001
+            if (window.location.port && window.location.port !== '4001') {
+                return `${window.location.protocol}//${window.location.hostname}:4001`;
+            }
+            return '';
         }
 
         async function completeUpload() {
             const token = document.getElementById('adminToken').value.trim();
             const videoId = document.getElementById('videoId').value.trim();
-            if (!token || !videoId) return alert('Token and Video ID required');
+            if (!videoId) return alert('Video/Media ID is required.');
 
             try {
-                const response = await fetch(`/api/admin/library/${videoId}/complete-upload`, {
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+                }
+
+                const baseUrl = getApiBase();
+                const response = await fetch(`${baseUrl}/api/admin/library/${videoId}/complete-upload`, {
                     method: 'PATCH',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: headers
                 });
 
                 const res = await response.json();
@@ -288,7 +290,7 @@
                 document.getElementById('completeCode').textContent = JSON.stringify(res, null, 2);
 
                 if (res.success) {
-                    alert('Phase 3 Success: Video finalized!');
+                    alert('Success: Upload completed & media status updated!');
                 } else {
                     alert('Error: ' + res.message);
                 }
@@ -298,20 +300,37 @@
             }
         }
 
-        function loadVideo() {
+        function loadMedia() {
             const url = document.getElementById('playUrl').value.trim();
-            if (!url) return alert('Enter a video URL.');
-            videoPlayer.src = url;
-            videoPlayer.load();
-            videoPlayer.play();
-        }
+            if (!url) return alert('Enter a media URL.');
 
-        function seekToTime() {
-            const time = parseFloat(document.getElementById('startTime').value);
-            if (isNaN(time)) return alert('Enter a valid time in seconds.');
-            
-            videoPlayer.currentTime = time;
-            videoPlayer.play();
+            const previewContainer = document.getElementById('previewContainer');
+            const videoPlayer = document.getElementById('videoPlayer');
+            const imagePreview = document.getElementById('imagePreview');
+            const pdfPreview = document.getElementById('pdfPreview');
+
+            videoPlayer.style.display = 'none';
+            imagePreview.style.display = 'none';
+            pdfPreview.style.display = 'none';
+
+            previewContainer.style.display = 'block';
+
+            const cleanUrl = url.split('?')[0].toLowerCase();
+            if (cleanUrl.match(/\.(mp4|mkv|mov|avi|webm)$/)) {
+                videoPlayer.style.display = 'block';
+                videoPlayer.src = url;
+                videoPlayer.load();
+                videoPlayer.play();
+            } else if (cleanUrl.match(/\.(jpg|jpeg|png|webp|gif|svg)$/)) {
+                imagePreview.style.display = 'block';
+                imagePreview.src = url;
+            } else if (cleanUrl.endsWith('.pdf')) {
+                pdfPreview.style.display = 'block';
+                pdfPreview.src = url;
+            } else {
+                imagePreview.style.display = 'block';
+                imagePreview.src = url;
+            }
         }
 
         function getContentType(filename) {
@@ -321,10 +340,12 @@
                 'mkv': 'video/x-matroska',
                 'mov': 'video/quicktime',
                 'avi': 'video/x-msvideo',
+                'webm': 'video/webm',
                 'jpg': 'image/jpeg',
                 'jpeg': 'image/jpeg',
                 'png': 'image/png',
-                'webp': 'image/webp'
+                'webp': 'image/webp',
+                'pdf': 'application/pdf'
             };
             return mimeTypes[extension] || 'application/octet-stream';
         }

@@ -30,6 +30,7 @@ async function bootstrap() {
       'http://www.dashboard.irclinic.com.au',
       'http://localhost:3001',
       'http://localhost:3000',
+      'http://localhost:5500',
       appConfig().app.client_app_url || '',
     ],
     credentials: true,

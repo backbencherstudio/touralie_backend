@@ -33,46 +33,63 @@ export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
   @ApiOperation({
-    summary: 'Browse Video Library (Personalized) (User Only)',
-    description: `
-Fetch a paginated list of published videos. 
-If the authenticated user has personalization goals (e.g., "fat_loss") set in their profile, videos matching those tags will be prioritized in the "Best Match" section.
-
-**Features:**
-- Pagination support
-- Category filtering
-- Date range filtering
-- Search by title or description
-- Personalization-based sorting
-`,
+    summary: 'Browse Library (User Only)',
+    description:
+      'Fetch a paginated list of published media (VIDEO, IMAGE, PDF). Only `OTHER` type items are returned.\n\n' +
+      '- `media_type` indicates the file type: `VIDEO`, `IMAGE`, or `PDF`\n' +
+      '- `thumbnail_url` is `null` for IMAGE and PDF\n' +
+      '- `duration` is `null` for IMAGE and PDF\n' +
+      '- Filter by `media_type` to get only specific types',
   })
   @ApiResponse({
     status: 200,
-    description: 'A list of videos tailored to the user.',
+    description: 'Paginated list of media items.',
     schema: {
       example: {
         success: true,
         message: 'Videos found successfully',
         data: [
           {
-            id: 'cmm632yhc0003kg9wfbdqce74',
-            title: 'Strength Training 101',
-            thumbnail_url: 'https://example.com/thumb.jpg',
-            category: 'Fitness',
-            created_at: '2026-03-16T10:00:00.000Z',
-            duration: 1200,
+            id: 'cm9vid001',
+            title: 'Full Body Workout',
+            duration: 1800,
+            created_at: '2026-03-14T10:00:00.000Z',
             is_favorite: true,
+            thumbnail_url: 'https://storage.example.com/thumbnails/workout.jpg',
+            category: 'Fitness',
+            media_type: 'VIDEO',
+          },
+          {
+            id: 'cm9img002',
+            title: 'Exercise Posture Guide',
+            duration: null,
+            created_at: '2026-05-01T08:00:00.000Z',
+            is_favorite: false,
+            thumbnail_url: null,
+            category: 'Education',
+            media_type: 'IMAGE',
+          },
+          {
+            id: 'cm9pdf003',
+            title: 'Nutrition Handbook',
+            duration: null,
+            created_at: '2026-06-10T09:00:00.000Z',
+            is_favorite: false,
+            thumbnail_url: null,
+            category: 'Nutrition',
+            media_type: 'PDF',
           },
         ],
         meta_data: {
           page: 1,
           limit: 10,
-          total: 50,
-          search: '',
+          total: 3,
+          search: null,
           filter: {
             category_id: null,
             start_date: null,
             end_date: null,
+            media_type: null,
           },
         },
       },
@@ -117,37 +134,48 @@ If the authenticated user has personalization goals (e.g., "fat_loss") set in th
   }
 
   @ApiOperation({
-    summary: 'Get My Favorite Videos (User Only)',
-    description:
-      'Returns a paginated list of videos that the user has marked as favorite.',
+    summary: 'Get My Favorites (User Only)',
+    description: 'Paginated list of favorited media items. Includes VIDEO, IMAGE, and PDF types.',
   })
   @ApiResponse({
     status: 200,
-    description: 'List of favorite videos.',
+    description: 'List of favorite media items.',
     schema: {
       example: {
         success: true,
         message: 'Videos found successfully',
         data: [
           {
-            id: 'cmm632yhc0003kg9wfbdqce74',
-            title: 'Strength Training 101',
-            duration: 1200,
-            created_at: '2026-03-16T10:00:00.000Z',
+            id: 'cm9vid001',
+            title: 'Full Body Workout',
+            duration: 1800,
+            created_at: '2026-03-14T10:00:00.000Z',
             is_favorite: true,
-            thumbnail_url: 'https://example.com/storage/videos/thumb.jpg',
+            thumbnail_url: 'https://storage.example.com/thumbnails/workout.jpg',
             category: 'Fitness',
+            media_type: 'VIDEO',
+          },
+          {
+            id: 'cm9pdf003',
+            title: 'Nutrition Handbook',
+            duration: null,
+            created_at: '2026-06-10T09:00:00.000Z',
+            is_favorite: true,
+            thumbnail_url: null,
+            category: 'Nutrition',
+            media_type: 'PDF',
           },
         ],
         meta_data: {
           page: 1,
           limit: 10,
-          total: 5,
-          search: '',
+          total: 2,
+          search: null,
           filter: {
             category_id: null,
             start_date: null,
             end_date: null,
+            media_type: null,
           },
         },
       },
@@ -166,13 +194,8 @@ If the authenticated user has personalization goals (e.g., "fat_loss") set in th
 
   @ApiOperation({
     summary: 'Get My Watch History (User Only)',
-    description: `
-Returns a list of videos the user has previously watched or started. 
-Includes progress details like last played position.
-
-**Filtering:**
-- Use \`watch_status\` to filter by COMPLETED or IN_PROGRESS.
-`,
+    description:
+      'Returns media the user has viewed. Only VIDEO items have `watch_status`, `is_completed`, and `last_played_position`. IMAGE and PDF items do not include these fields.',
   })
   @ApiResponse({
     status: 200,
@@ -183,25 +206,37 @@ Includes progress details like last played position.
         message: 'Watch history found successfully',
         data: [
           {
-            id: 'cmm632yhc0003kg9wfbdqce74',
-            title: 'Yoga for Beginners',
-            duration: 900,
-            created_at: '2026-03-15T10:00:00.000Z',
+            id: 'cm9vid001',
+            title: 'Full Body Workout',
+            duration: 1800,
+            created_at: '2026-03-14T10:00:00.000Z',
+            watch_status: 'IN_PROGRESS',
             is_completed: false,
             last_played_position: 450,
-            thumbnail_url: 'https://example.com/storage/videos/yoga.jpg',
-            category: 'Wellness',
+            thumbnail_url: 'https://storage.example.com/thumbnails/workout.jpg',
+            category: 'Fitness',
+            media_type: 'VIDEO',
+          },
+          {
+            id: 'cm9pdf003',
+            title: 'Nutrition Handbook',
+            duration: null,
+            created_at: '2026-06-10T09:00:00.000Z',
+            thumbnail_url: null,
+            category: 'Nutrition',
+            media_type: 'PDF',
           },
         ],
         meta_data: {
           page: 1,
           limit: 10,
-          total: 12,
-          search: '',
+          total: 2,
+          search: null,
           filter: {
             category_id: null,
             start_date: null,
             end_date: null,
+            media_type: null,
           },
         },
       },
@@ -219,32 +254,77 @@ Includes progress details like last played position.
   }
 
   @ApiOperation({
-    summary: 'Get Video Details & Chapters (User Only)',
-    description: `
-Fetch comprehensive details for a single video, including its chapters and the user's current watch progress.
-Use this before launching the video player.
-`,
+    summary: 'Get Media Item Details (User Only)',
+    description:
+      'Returns full details for a single media item.\n\n' +
+      '- **VIDEO**: Returns `duration`, `thumbnail_url`, `last_watch_position`, `is_completed`\n' +
+      '- **IMAGE**: Returns only `url` (image URL). `duration`, `thumbnail_url`, `last_watch_position`, `is_completed` are **omitted**\n' +
+      '- **PDF**: Returns only `url` (PDF URL). Same fields omitted as IMAGE',
   })
   @ApiResponse({
     status: 200,
-    description: 'Complete video object with chapters.',
+    description: 'VIDEO example',
     schema: {
       example: {
         success: true,
-        message: 'Video found successfully',
+        message: 'Media found successfully',
         data: {
-          id: 'cmm632yhc0003kg9wfbdqce74',
+          id: 'cm9vid001',
           title: 'Full Body Workout',
-          description: 'A comprehensive workout for all muscle groups.',
+          description: 'A comprehensive 30-min workout session.',
           duration: 1800,
           created_at: '2026-03-14T10:00:00.000Z',
           is_favorite: false,
           last_watch_position: 120,
-          watch_status: 'IN_PROGRESS',
           is_completed: false,
-          url: 'https://example.com/storage/videos/workout.mp4',
-          thumbnail_url: 'https://example.com/storage/videos/workout.jpg',
+          url: 'https://storage.example.com/videos/workout.mp4',
+          thumbnail_url: 'https://storage.example.com/thumbnails/workout.jpg',
           category: 'Fitness',
+          media_type: 'VIDEO',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'IMAGE example',
+    schema: {
+      example: {
+        success: true,
+        message: 'Media found successfully',
+        data: {
+          id: 'cm9img002',
+          title: 'Exercise Posture Guide',
+          description: 'Visual guide for correct exercise posture.',
+          duration: null,
+          created_at: '2026-05-01T08:00:00.000Z',
+          is_favorite: true,
+          url: 'https://storage.example.com/media/posture_guide.png',
+          thumbnail_url: null,
+          category: 'Education',
+          media_type: 'IMAGE',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'PDF example',
+    schema: {
+      example: {
+        success: true,
+        message: 'Media found successfully',
+        data: {
+          id: 'cm9pdf003',
+          title: 'Nutrition Handbook',
+          description: 'Complete guide to sports nutrition.',
+          duration: null,
+          created_at: '2026-06-10T09:00:00.000Z',
+          is_favorite: false,
+          url: 'https://storage.example.com/media/nutrition_handbook.pdf',
+          thumbnail_url: null,
+          category: 'Nutrition',
+          media_type: 'PDF',
         },
       },
     },
