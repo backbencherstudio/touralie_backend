@@ -51,8 +51,7 @@ export default () => ({
     port: parseInt(process.env.MAIL_PORT || '2525', 10),
     secure: process.env.MAIL_SECURE === 'true',
     requireTls: process.env.MAIL_REQUIRE_TLS !== 'false',
-    tlsRejectUnauthorized:
-      process.env.MAIL_TLS_REJECT_UNAUTHORIZED !== 'false',
+    tlsRejectUnauthorized: process.env.MAIL_TLS_REJECT_UNAUTHORIZED !== 'false',
     user: process.env.MAIL_USERNAME,
     password: process.env.MAIL_PASSWORD,
     from: process.env.MAIL_FROM_ADDRESS,

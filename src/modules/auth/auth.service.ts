@@ -238,8 +238,6 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    console.log('fcm token', fcm_token);
-
     // update fcm token if provided
     if (fcm_token) {
       await this.prisma.user.update({

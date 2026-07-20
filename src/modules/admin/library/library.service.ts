@@ -4,7 +4,12 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import appConfig from '../../../config/app.config';
 import { InitVideoUploadDto } from './dto/init-video-upload.dto';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
-import { VideoStatus, MediaType, VideoType, Visibility } from 'prisma/generated/enums';
+import {
+  VideoStatus,
+  MediaType,
+  VideoType,
+  Visibility,
+} from 'prisma/generated/enums';
 import { LibraryQueryStatus, QueryLibraryDto } from './dto/query-library.dto';
 import { Prisma } from 'prisma/generated/client';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -28,9 +33,13 @@ export class LibraryService {
     const extension = filename.split('.').pop();
     const key = `${appConfig().storageUrl.tempVideo}${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
 
-    const mediaType = initVideoUploadDto.media_type || this.getMediaTypeFromFilename(filename);
+    const mediaType =
+      initVideoUploadDto.media_type || this.getMediaTypeFromFilename(filename);
 
-    if (initVideoUploadDto.type === VideoType.PRESCRIBABLE && mediaType !== MediaType.VIDEO) {
+    if (
+      initVideoUploadDto.type === VideoType.PRESCRIBABLE &&
+      mediaType !== MediaType.VIDEO
+    ) {
       throw new Error('Prescribable library items must be videos');
     }
 
@@ -52,7 +61,10 @@ export class LibraryService {
         url: key,
         status: VideoStatus.UPLOADING,
         thumbnail_url: thumbnailUrl,
-        duration: mediaType === MediaType.VIDEO ? (initVideoUploadDto.duration || 0) : null,
+        duration:
+          mediaType === MediaType.VIDEO
+            ? initVideoUploadDto.duration || 0
+            : null,
         type: initVideoUploadDto.type,
         visibility: initVideoUploadDto.visibility,
         media_type: mediaType,
@@ -97,9 +109,14 @@ export class LibraryService {
     const extension = filename.split('.').pop();
     const key = `${appConfig().storageUrl.tempVideo}${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
 
-    const mediaType = initVideoUploadDto.media_type || this.getMediaTypeFromFilename(filename);
+    const mediaType =
+      initVideoUploadDto.media_type || this.getMediaTypeFromFilename(filename);
 
-    if ((initVideoUploadDto.type || existingVideo.type) === VideoType.PRESCRIBABLE && mediaType !== MediaType.VIDEO) {
+    if (
+      (initVideoUploadDto.type || existingVideo.type) ===
+        VideoType.PRESCRIBABLE &&
+      mediaType !== MediaType.VIDEO
+    ) {
       throw new Error('Prescribable library items must be videos');
     }
 
@@ -134,7 +151,10 @@ export class LibraryService {
         url: key,
         status: VideoStatus.UPLOADING,
         thumbnail_url: thumbnailUrl,
-        duration: mediaType === MediaType.VIDEO ? (initVideoUploadDto.duration ?? existingVideo.duration) : null,
+        duration:
+          mediaType === MediaType.VIDEO
+            ? (initVideoUploadDto.duration ?? existingVideo.duration)
+            : null,
         type: initVideoUploadDto.type ?? existingVideo.type,
         visibility: initVideoUploadDto.visibility ?? existingVideo.visibility,
         media_type: mediaType,

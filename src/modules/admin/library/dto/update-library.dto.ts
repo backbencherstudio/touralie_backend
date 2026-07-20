@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { VideoStatus, Visibility } from 'prisma/generated/enums';
-import { IsOptional, IsString, IsEnum, IsInt, ValidateIf, IsArray } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsInt,
+  ValidateIf,
+  IsArray,
+} from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 export class UpdateLibraryDto {
@@ -40,12 +47,12 @@ export class UpdateLibraryDto {
     required: false,
     enum: Visibility,
     example: Visibility.PUBLIC,
-    description: "Update this filed only for other videos not for prescribable videos"
+    description:
+      'Update this filed only for other videos not for prescribable videos',
   })
   @IsOptional()
   @IsEnum(Visibility)
-  visibility?: Visibility
-
+  visibility?: Visibility;
 
   @ValidateIf((ob) => ob.visibility === Visibility.LISTED)
   @ApiProperty({
@@ -55,7 +62,6 @@ export class UpdateLibraryDto {
   })
   @IsOptional()
   @Transform(({ value }) => {
-
     if (typeof value === 'string') return [value];
     return value;
   })

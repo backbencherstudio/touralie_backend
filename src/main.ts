@@ -112,85 +112,53 @@ async function bootstrap() {
       docExpansion: 'none',
       persistAuthorization: true,
       defaultModelsExpandDepth: -1,
+    },
+    customJsStr: `
+      window.addEventListener('load', function () {
+        var originalFetch = window.fetch;
+        window.fetch = function () {
+          return originalFetch.apply(this, arguments).then(function (response) {
+            var url = response.url || '';
+            if (url.indexOf('/auth/login') !== -1) {
+              response.clone().json().then(function (data) {
+                var token = data && data.authorization && data.authorization.access_token;
+                var type = data && data.type;
+                if (!token) return;
 
-      responseInterceptor: function (response) {
-        console.log('Swagger Interceptor Fired! URL:', response.url);
-
-        try {
-          if (response.url && response.url.indexOf('/auth/login') !== -1) {
-            console.log('Login API detected! Status:', response.status);
-
-            if (response.status === 200 || response.status === 201) {
-              var data = response.data || response.body || response.obj;
-
-              if (typeof data === 'string') {
-                data = JSON.parse(data);
-              }
-
-              console.log('Login Response Data:', data);
-
-              var token =
-                data && data.authorization && data.authorization.access_token;
-              var type = data && data.type;
-
-              if (!token) {
-                console.log('Error: Token not found in the response!');
-                return response;
-              }
-
-              var key =
-                type === 'admin' || type === 'su_admin'
-                  ? 'admin_token'
-                  : type === 'practitioner'
+                var key =
+                  type === 'admin' || type === 'su_admin'
+                    ? 'admin_token'
+                    : type === 'practitioner'
                     ? 'practitioner_token'
                     : 'user_token';
 
-              var ui = window['ui'];
+                var ui = window.ui;
+                if (ui) {
+                  var authObj = {};
+                  authObj[key] = {
+                    name: key,
+                    schema: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+                    value: token,
+                  };
+                  ui.authActions.authorize(authObj);
 
-              if (ui) {
-                var authObj = {};
-                authObj[key] = {
-                  name: key,
-                  schema: {
-                    type: 'http',
-                    scheme: 'bearer',
-                    bearerFormat: 'JWT',
-                  },
-                  value: token,
-                };
-
-                ui.authActions.authorize(authObj);
-
-                try {
-                  var currentAuth = window.localStorage.getItem('authorized');
-                  var parsedAuth = currentAuth ? JSON.parse(currentAuth) : {};
-
-                  parsedAuth[key] = authObj[key];
-
-                  window.localStorage.setItem(
-                    'authorized',
-                    JSON.stringify(parsedAuth),
-                  );
-                  console.log('Token successfully persisted to localStorage!');
-                } catch (e) {
-                  console.error('Failed to save token to localStorage', e);
+                  try {
+                    var currentAuth = window.localStorage.getItem('authorized');
+                    var parsedAuth = currentAuth ? JSON.parse(currentAuth) : {};
+                    parsedAuth[key] = authObj[key];
+                    window.localStorage.setItem('authorized', JSON.stringify(parsedAuth));
+                    console.log('Token auto-saved for: ' + key);
+                  } catch (e) {
+                    console.error('Failed to persist token', e);
+                  }
                 }
-
-                console.log(
-                  'Success: Swagger auto authorized with ' + key + '!',
-                );
-              } else {
-                console.log('Error: Swagger UI instance not found on window!');
-              }
+              }).catch(function () {});
             }
-          }
-        } catch (err) {
-          console.error('Swagger token auto set failed:', err);
-        }
-
-        return response;
-      },
-    },
+            return response;
+          });
+        };
+      });
+    `,
   });
 
   // end swagger

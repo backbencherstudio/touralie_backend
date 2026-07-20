@@ -9,7 +9,6 @@ import {
 } from 'class-validator';
 import { VideoType, MediaType } from 'prisma/generated/enums';
 
-
 export class PaginationQueryDto {
   @ApiProperty({
     description: 'Page number',

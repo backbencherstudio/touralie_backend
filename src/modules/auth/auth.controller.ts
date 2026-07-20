@@ -242,7 +242,7 @@ Authenticates a user and returns access and refresh tokens.
     const response = await this.authService.login({
       userId: user_id,
       email: user_email,
-      fcm_token: body.fcm_token,
+      fcm_token: body?.fcm_token,
     });
 
     // store to secure cookies

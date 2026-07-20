@@ -7,6 +7,13 @@ import { MembershipModule } from './membership/membership.module';
 import { LibraryModule } from './library/library.module';
 
 @Module({
-  imports: [NotificationModule, ContactModule, FaqModule, PrescriptionModule, MembershipModule, LibraryModule],
+  imports: [
+    NotificationModule,
+    ContactModule,
+    FaqModule,
+    PrescriptionModule,
+    MembershipModule,
+    LibraryModule,
+  ],
 })
 export class ApplicationModule {}
