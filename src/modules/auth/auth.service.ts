@@ -191,7 +191,7 @@ export class AuthService {
           throw new UnauthorizedException({
             message: 'Please verify your email address before logging in.',
             data: {
-              status: 'PENDING',
+              status: 'UNVERIFIED',
               email: user.email,
             },
           });
