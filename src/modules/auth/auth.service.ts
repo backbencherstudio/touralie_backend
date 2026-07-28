@@ -193,8 +193,6 @@ export class AuthService {
             data: {
               status: 'PENDING',
               email: user.email,
-              is_email_verified: false,
-              isEmailVerified: false,
             },
           });
         }
@@ -204,33 +202,17 @@ export class AuthService {
             const isValid = await this.userRepository.verify2FA(user.id, token);
             if (!isValid) {
               throw new UnauthorizedException('Invalid token');
-              // return {
-              //   success: false,
-              //   message: 'Invalid token',
-              // };
             }
           } else {
             throw new UnauthorizedException('Token is required');
-            // return {
-            //   success: false,
-            //   message: 'Token is required',
-            // };
           }
         }
         return result;
       } else {
         throw new UnauthorizedException('Password not matched');
-        // return {
-        //   success: false,
-        //   message: 'Password not matched',
-        // };
       }
     } else {
       throw new UnauthorizedException('Email not found');
-      // return {
-      //   success: false,
-      //   message: 'Email not found',
-      // };
     }
   }
 
