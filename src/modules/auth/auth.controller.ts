@@ -228,6 +228,40 @@ Authenticates a user and returns access and refresh tokens.
       },
     },
   })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Unauthorized. Unverified email, account banned, or invalid credentials.',
+    schema: {
+      examples: {
+        unverifiedEmail: {
+          summary: 'Unverified Email',
+          value: {
+            success: false,
+            message: 'Please verify your email address before logging in.',
+            data: {
+              status: 'PENDING',
+              email: 'user@example.com',
+              is_email_verified: false,
+              isEmailVerified: false,
+            },
+          },
+        },
+        accountBanned: {
+          summary: 'Account Banned',
+          value: {
+            success: false,
+            message:
+              'Your account has been banned! Please contact support for more information.',
+            data: {
+              status: 'BANNED',
+              email: 'user@example.com',
+            },
+          },
+        },
+      },
+    },
+  })
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(

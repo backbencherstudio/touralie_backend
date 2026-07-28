@@ -28,6 +28,10 @@ export class UcodeRepository {
 
     const userDetails = await this.userRepository.getUserDetails(userId);
     if (userDetails && userDetails.email) {
+      const targetEmail = email ?? userDetails.email;
+      // Delete all existing tokens/OTPs for this email before creating a new one
+      await this.deleteAllToken({ email: targetEmail });
+
       let token: string;
       if (isOtp) {
         // create 5 digit otp code
@@ -40,7 +44,7 @@ export class UcodeRepository {
         data: {
           user_id: userId,
           token: token,
-          email: email ?? userDetails.email,
+          email: targetEmail,
           expired_at: expired_at,
         },
       });

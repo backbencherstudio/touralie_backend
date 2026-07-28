@@ -23,10 +23,17 @@ export class CustomExceptionFilter implements ExceptionFilter {
       console.error('🔥 [DEV ERROR LOG]:', exception);
     }
     let errorMessage: string | object = 'Internal server error';
+    let extraData: Record<string, any> = {};
 
     if (isHttpException) {
       const exceptionResponse: any = exception.getResponse();
-      errorMessage = exceptionResponse.message || exceptionResponse;
+      if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+        const { message, error, statusCode, ...rest } = exceptionResponse;
+        errorMessage = message || exceptionResponse;
+        extraData = rest;
+      } else {
+        errorMessage = exceptionResponse;
+      }
     } else if (isDevelopment) {
       errorMessage =
         exception instanceof Error
@@ -38,6 +45,7 @@ export class CustomExceptionFilter implements ExceptionFilter {
     response.status(status).json({
       success: false,
       message: errorMessage,
+      ...extraData,
     });
   }
 }

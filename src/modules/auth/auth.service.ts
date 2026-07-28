@@ -173,9 +173,14 @@ export class AuthService {
 
     if (user) {
       if (user.status === 2) {
-        throw new UnauthorizedException(
-          'Your account has been banned! Please contact support for more information.',
-        );
+        throw new UnauthorizedException({
+          message:
+            'Your account has been banned! Please contact support for more information.',
+          data: {
+            status: 'BANNED',
+            email: user.email,
+          },
+        });
       }
       const _isValidPassword = await this.userRepository.validatePassword({
         email: email,
@@ -183,9 +188,15 @@ export class AuthService {
       });
       if (_isValidPassword) {
         if (user.type === 'user' && !user.email_verified_at) {
-          throw new UnauthorizedException(
-            'Please verify your email address before logging in.',
-          );
+          throw new UnauthorizedException({
+            message: 'Please verify your email address before logging in.',
+            data: {
+              status: 'PENDING',
+              email: user.email,
+              is_email_verified: false,
+              isEmailVerified: false,
+            },
+          });
         }
         const { password, ...result } = user;
         if (user.is_two_factor_enabled) {
@@ -526,11 +537,8 @@ export class AuthService {
           password: password,
         });
 
-        // delete otp code
-        await this.ucodeRepository.deleteToken({
-          email: email,
-          token: token,
-        });
+        // delete all otp codes for this email
+        await this.ucodeRepository.deleteAllToken({ email: email });
 
         return {
           success: true,
@@ -721,11 +729,8 @@ export class AuthService {
             new_email: new_email,
           });
 
-          // delete otp code
-          await this.ucodeRepository.deleteToken({
-            email: new_email,
-            token: token,
-          });
+          // delete all otp codes for this email
+          await this.ucodeRepository.deleteAllToken({ email: new_email });
 
           return {
             success: true,
