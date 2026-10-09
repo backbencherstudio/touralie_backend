@@ -109,7 +109,11 @@ export class MailService {
     videoTitles: string[];
   }) {
     try {
-      const from = `${appConfig().mail.fromName} <${appConfig().mail.from}>`;
+      const appName =
+        appConfig().app.name && appConfig().app.name !== 'touralie'
+          ? appConfig().app.name
+          : 'IR Clinic';
+      const from = `${appName} <${appConfig().mail.from}>`;
       const subject = `New Prescription: ${params.prescriptionTitle}`;
 
       await this.queue.add('sendPrescriptionAssignedEmail', {
@@ -122,8 +126,42 @@ export class MailService {
           prescriptionTitle: params.prescriptionTitle,
           totalVideos: params.totalVideos,
           videoTitles: params.videoTitles,
-          appName: appConfig().app.name,
+          appName: appName,
           loginUrl: appConfig().app.client_app_url,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async sendPatientWelcomeCredentials(params: {
+    name: string;
+    email: string;
+    password: string;
+    loginUrl: string;
+    isDobPassword: boolean;
+  }) {
+    try {
+      const appName =
+        appConfig().app.name && appConfig().app.name !== 'touralie'
+          ? appConfig().app.name
+          : 'IR Clinic';
+      const from = `${appName} <${appConfig().mail.from}>`;
+      const subject = `Welcome to ${appName} - Your Exercise App Account`;
+
+      await this.queue.add('sendPatientWelcomeCredentials', {
+        to: params.email,
+        from,
+        subject,
+        template: 'patient-welcome-credentials',
+        context: {
+          name: params.name,
+          email: params.email,
+          password: params.password,
+          loginUrl: params.loginUrl,
+          isDobPassword: params.isDobPassword,
+          appName: appName,
         },
       });
     } catch (error) {

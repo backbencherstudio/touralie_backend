@@ -37,6 +37,13 @@ export default () => ({
     port: process.env.REDIS_PORT,
   },
 
+  cliniko: {
+    apiKey: process.env.CLINIKO_API_KEY,
+    shard: process.env.CLINIKO_SHARD || 'au1',
+    vendor: process.env.CLINIKO_VENDOR || 'Touralie (admin@touralie.com)',
+    webhookSecret: process.env.CLINIKO_WEBHOOK_SECRET,
+  },
+
   security: {
     salt: 10,
   },

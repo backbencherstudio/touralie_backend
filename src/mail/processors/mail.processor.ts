@@ -18,7 +18,7 @@ export class MailProcessor extends WorkerHost {
   }
 
   @OnWorkerEvent('completed')
-  onCompleted(job: Job, result: any) {
+  onCompleted(job: Job) {
     this.logger.log(`Job ${job.id} with name ${job.name} completed`);
   }
 
@@ -67,6 +67,16 @@ export class MailProcessor extends WorkerHost {
           break;
         case 'sendPrescriptionAssignedEmail':
           this.logger.log('Sending prescription assigned email');
+          await this.mailerService.sendMail({
+            to: job.data.to,
+            from: job.data.from,
+            subject: job.data.subject,
+            template: job.data.template,
+            context: job.data.context,
+          });
+          break;
+        case 'sendPatientWelcomeCredentials':
+          this.logger.log('Sending patient welcome credentials email');
           await this.mailerService.sendMail({
             to: job.data.to,
             from: job.data.from,

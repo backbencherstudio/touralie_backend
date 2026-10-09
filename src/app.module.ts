@@ -5,6 +5,7 @@ import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { RedisModule } from '@nestjs-modules/ioredis';
+import { ScheduleModule } from '@nestjs/schedule';
 
 // internal imports
 import appConfig from './config/app.config';
@@ -22,6 +23,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { PrometheusModule } from './prometheus/prometheus.module';
 import { RepositoryModule } from './common/repository/repository.module';
+import { ClinikoModule } from './modules/cliniko/cliniko.module';
 
 @Module({
   imports: [
@@ -68,6 +70,7 @@ import { RepositoryModule } from './common/repository/repository.module';
     //   },
     // ]),
     // General modules
+    ScheduleModule.forRoot(),
     PrismaModule,
     RepositoryModule,
     AuthModule,
@@ -78,6 +81,7 @@ import { RepositoryModule } from './common/repository/repository.module';
     ChatModule,
     PaymentModule,
     PrometheusModule,
+    ClinikoModule,
   ],
   controllers: [AppController],
   providers: [
