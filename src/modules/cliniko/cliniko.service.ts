@@ -66,7 +66,7 @@ export class ClinikoService {
   /**
    * Cron Job: Runs every 5 minutes to poll newly created appointments in Cliniko
    */
-  @Cron(CronExpression.EVERY_5_SECONDS)
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async handleCronPoll(): Promise<void> {
     this.logger.log('Starting scheduled Cliniko appointment polling...');
     await this.syncAppointments();
