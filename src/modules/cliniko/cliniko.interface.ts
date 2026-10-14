@@ -44,6 +44,18 @@ export interface ClinikoPatient {
   state?: string;
   post_code?: string;
   country?: string;
+  archived_at?: string | null;
+  deleted_at?: string | null;
+}
+
+export interface ClinikoPatientsResponse {
+  patients: ClinikoPatient[];
+  total_entries?: number;
+  links?: {
+    self?: string;
+    next?: string;
+    previous?: string;
+  };
 }
 
 export interface ClinikoSyncResult {
@@ -54,4 +66,26 @@ export interface ClinikoSyncResult {
   totalAppointments: number;
   lastSyncedAt?: string;
   message: string;
+}
+
+export interface ClinikoPatientSyncResult {
+  success: boolean;
+  totalPatientsInCliniko?: number;
+  totalProcessed: number;
+  syncedCount: number;
+  updatedCount: number;
+  skippedCount: number;
+  failedCount: number;
+  pagesProcessed: number;
+  lastSyncedAt?: string;
+  message: string;
+}
+
+export interface ClinikoSyncPatientsOptions {
+  page?: number;
+  perPage?: number;
+  maxPages?: number;
+  sendWelcomeEmail?: boolean;
+  createdSince?: string;
+  updatedSince?: string;
 }
