@@ -42,11 +42,13 @@ export class PrescriptionService {
       );
     }
 
+    const now = Date.now();
     const prescription = await this.prisma.prescription.create({
       data: {
         title: createPrescriptionDto.title,
         videos: {
-          create: createPrescriptionDto.videos.map((video) => ({
+          create: createPrescriptionDto.videos.map((video, index) => ({
+            created_at: new Date(now + index * 1000),
             video: {
               connect: {
                 id: video.video_id,
@@ -335,6 +337,10 @@ export class PrescriptionService {
             id: true,
             title: true,
             videos: {
+              orderBy: [
+                { created_at: 'asc' },
+                { id: 'asc' },
+              ],
               select: {
                 id: true,
                 reps: true,

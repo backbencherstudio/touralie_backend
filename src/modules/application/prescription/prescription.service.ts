@@ -53,6 +53,10 @@ export class PrescriptionService {
         title: true,
         created_at: true,
         videos: {
+          orderBy: [
+            { created_at: 'asc' },
+            { id: 'asc' },
+          ],
           select: {
             video: {
               select: {
@@ -173,6 +177,10 @@ export class PrescriptionService {
         title: true,
         created_at: true,
         videos: {
+          orderBy: [
+            { created_at: 'asc' },
+            { id: 'asc' },
+          ],
           select: {
             id: true,
             reps: true,
