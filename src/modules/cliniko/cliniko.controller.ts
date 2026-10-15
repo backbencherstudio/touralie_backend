@@ -18,7 +18,7 @@ export class ClinikoController {
   constructor(
     private readonly clinikoService: ClinikoService,
     @InjectRedis() private readonly redis: Redis,
-  ) {}
+  ) { }
 
   private validateAuth(apiKey?: string): void {
     const webhookSecret = appConfig().cliniko?.webhookSecret;
