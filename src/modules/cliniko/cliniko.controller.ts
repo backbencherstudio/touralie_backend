@@ -13,12 +13,22 @@ import appConfig from '../../config/app.config';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 
-@Controller('api/cliniko')
+@Controller('cliniko')
 export class ClinikoController {
   constructor(
     private readonly clinikoService: ClinikoService,
     @InjectRedis() private readonly redis: Redis,
   ) {}
+
+  private validateAuth(apiKey?: string): void {
+    const webhookSecret = appConfig().cliniko?.webhookSecret;
+    const clinikoApiKey = appConfig().cliniko?.apiKey;
+    if (webhookSecret || clinikoApiKey) {
+      if (apiKey !== webhookSecret && apiKey !== clinikoApiKey) {
+        throw new UnauthorizedException('Invalid API key.');
+      }
+    }
+  }
 
   /**
    * Manual Sync Endpoint:
@@ -30,10 +40,7 @@ export class ClinikoController {
     @Headers('x-api-key') apiKey?: string,
     @Query('since') since?: string,
   ) {
-    const webhookSecret = appConfig().cliniko?.webhookSecret;
-    if (webhookSecret && apiKey !== webhookSecret) {
-      throw new UnauthorizedException('Invalid API key.');
-    }
+    this.validateAuth(apiKey);
 
     const result = await this.clinikoService.syncAppointments(since);
     return result;
@@ -55,10 +62,7 @@ export class ClinikoController {
     @Query('created_since') createdSince?: string,
     @Query('updated_since') updatedSince?: string,
   ) {
-    const webhookSecret = appConfig().cliniko?.webhookSecret;
-    if (webhookSecret && apiKey !== webhookSecret) {
-      throw new UnauthorizedException('Invalid API key.');
-    }
+    this.validateAuth(apiKey);
 
     const result = await this.clinikoService.syncAllPatients({
       sendWelcomeEmail: sendEmail !== undefined ? sendEmail === 'true' : true,
@@ -107,10 +111,7 @@ export class ClinikoController {
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   async handleWebhook(@Headers('x-api-key') apiKey: string) {
-    const webhookSecret = appConfig().cliniko?.webhookSecret;
-    if (webhookSecret && apiKey !== webhookSecret) {
-      throw new UnauthorizedException('Invalid webhook secret.');
-    }
+    this.validateAuth(apiKey);
 
     // Trigger immediate sync
     const result = await this.clinikoService.syncAppointments();
