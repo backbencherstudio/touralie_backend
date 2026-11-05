@@ -1,5 +1,6 @@
 import {
   Injectable,
+  BadRequestException,
   ForbiddenException,
   NotFoundException,
   UnauthorizedException,
@@ -346,9 +347,50 @@ export class UserService {
   }
 
   async update(id: string, updateUserDto: UpdateUserByAdminDto) {
-    const user = await this.userRepository.updateUser(id, updateUserDto);
+    const existing = await this.prisma.user.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('User not found');
 
-    return user;
+    const data: Prisma.UserUpdateInput = {};
+    if (updateUserDto.weight != null) data.weight = updateUserDto.weight;
+    if (updateUserDto.height != null) data.height = updateUserDto.height;
+    if (updateUserDto.personalization != null)
+      data.personalization = updateUserDto.personalization;
+    if (updateUserDto.name !== undefined) {
+      const name = updateUserDto.name?.trim();
+      if (!name) throw new BadRequestException('Name cannot be empty');
+      data.name = name;
+    }
+    if (updateUserDto.email !== undefined) {
+      if (!updateUserDto.email)
+        throw new BadRequestException('Email cannot be empty');
+      const email = updateUserDto.email.trim().toLowerCase();
+      const duplicate = await this.prisma.user.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' }, NOT: { id } },
+      });
+      if (duplicate) throw new BadRequestException('Email already exists');
+      data.email = email;
+    }
+    if (updateUserDto.gender !== undefined) data.gender = updateUserDto.gender;
+    if (updateUserDto.date_of_birth !== undefined) {
+      const dob =
+        updateUserDto.date_of_birth === null
+          ? null
+          : new Date(updateUserDto.date_of_birth);
+      if (dob && (Number.isNaN(dob.getTime()) || dob > new Date())) {
+        throw new BadRequestException(
+          'Date of birth must be a valid past date',
+        );
+      }
+      data.date_of_birth = dob;
+    }
+    try {
+      await this.prisma.user.update({ where: { id }, data });
+    } catch (error) {
+      if (error.code === 'P2002')
+        throw new BadRequestException('Email already exists');
+      throw error;
+    }
+    return { success: true, message: 'User updated successfully' };
   }
 
   async remove(id: string) {
