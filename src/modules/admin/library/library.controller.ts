@@ -49,8 +49,8 @@ export class LibraryController {
       'For **VIDEO** (`type: PRESCRIBABLE` or `type: OTHER`, `media_type: VIDEO`): An optional thumbnail can be uploaded.\n' +
       'For **IMAGE** or **PDF** (`type: OTHER`, `media_type: IMAGE` or `media_type: PDF`): Thumbnail and duration are ignored.\n\n' +
       '**Upload Steps:**\n' +
-      '1. Get `upload_url` from this response.\n' +
-      '2. `PUT` the file binary to `upload_url` with the correct `Content-Type`.\n' +
+      '1. Pass `size_bytes` to validate the file size (maximum 5 GB) and get `upload_url`.\n' +
+      '2. `PUT` the file binary to `upload_url` using the returned `content_type` as `Content-Type`.\n' +
       '3. Call `PATCH /admin/library/{video_id}/complete-upload` to finalize.',
   })
   @ApiResponse({
@@ -63,6 +63,8 @@ export class LibraryController {
         data: {
           video_id: 'cm9abc123xyz',
           upload_url: 'https://storage.example.com/presigned?token=...',
+          content_type: 'video/mp4',
+          max_size_bytes: 5000000000,
           status: 'UPLOADING',
           media_type: 'VIDEO',
           thumbnail_url: 'https://storage.example.com/thumbnails/thumb_abc.jpg',
@@ -213,7 +215,7 @@ export class LibraryController {
       'Allows replacing existing video file. Returns new pre-signed URL.\n\n' +
       '**Steps:**\n' +
       '1. Use the `upload_url` to `PUT` the new video file.\n' +
-      '2. Ensure `Content-Type` matches the file.\n' +
+      '2. Use the returned `content_type` as `Content-Type`.\n' +
       '3. Call `complete-upload` after the transfer is done.',
   })
   @ApiResponse({
@@ -232,6 +234,8 @@ export class LibraryController {
           properties: {
             video_id: { type: 'string' },
             upload_url: { type: 'string' },
+            content_type: { type: 'string', example: 'video/mp4' },
+            max_size_bytes: { type: 'number', example: 5000000000 },
           },
         },
       },

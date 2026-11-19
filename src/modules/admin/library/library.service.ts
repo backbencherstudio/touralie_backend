@@ -1,12 +1,18 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { UpdateLibraryDto } from './dto/update-library.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import appConfig from '../../../config/app.config';
-import { InitVideoUploadDto } from './dto/init-video-upload.dto';
+import {
+  InitVideoUploadDto,
+  MAX_LIBRARY_UPLOAD_BYTES,
+} from './dto/init-video-upload.dto';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 import {
   VideoStatus,
@@ -23,6 +29,8 @@ import { NotificationRepository } from 'src/common/repository/notification/notif
 
 @Injectable()
 export class LibraryService {
+  private readonly logger = new Logger(LibraryService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityRepository: ActivityRepository,
@@ -46,6 +54,9 @@ export class LibraryService {
     ) {
       throw new Error('Prescribable library items must be videos');
     }
+
+    const contentType = this.getContentType(filename);
+    const uploadUrl = await SojebStorage.getSignedUrl(key, 3600, contentType);
 
     let thumbnailUrl = null;
     if (mediaType === MediaType.VIDEO && thumbnailFile) {
@@ -80,18 +91,14 @@ export class LibraryService {
       `A new media upload has been initiated. Type: ${mediaType}`,
     );
 
-    const uploadUrl = await SojebStorage.getSignedUrl(
-      key,
-      3600,
-      this.getContentType(filename),
-    );
-
     return {
       success: true,
       message: 'Media upload initialized successfully',
       data: {
         video_id: video.id,
         upload_url: uploadUrl,
+        content_type: contentType,
+        max_size_bytes: MAX_LIBRARY_UPLOAD_BYTES,
         status: video.status,
         media_type: video.media_type,
         thumbnail_url:
@@ -128,6 +135,9 @@ export class LibraryService {
     ) {
       throw new Error('Prescribable library items must be videos');
     }
+
+    const contentType = this.getContentType(filename);
+    const uploadUrl = await SojebStorage.getSignedUrl(key, 3600, contentType);
 
     let thumbnailUrl = existingVideo.thumbnail_url;
 
@@ -175,18 +185,14 @@ export class LibraryService {
       `Re-upload initiated for media "${existingVideo.title || 'Untitled'}".`,
     );
 
-    const uploadUrl = await SojebStorage.getSignedUrl(
-      key,
-      3600,
-      this.getContentType(filename),
-    );
-
     return {
       success: true,
       message: 'Media upload re-initialized successfully',
       data: {
         video_id: id,
         upload_url: uploadUrl,
+        content_type: contentType,
+        max_size_bytes: MAX_LIBRARY_UPLOAD_BYTES,
         status: updatedVideo.status,
         media_type: updatedVideo.media_type,
         thumbnail_url:
@@ -218,42 +224,55 @@ export class LibraryService {
       const permanentKey = video.url.replace(tempPrefix, permanentPrefix);
 
       try {
-        await SojebStorage.move(video.url, permanentKey);
-      } catch (err) {
-        console.error('Failed to move uploaded file in storage:', err);
-        throw new BadRequestException(
-          'File not found in storage. Please ensure the file upload to storage completed before calling complete-upload.',
+        const moved = await SojebStorage.move(video.url, permanentKey);
+        if (!moved) {
+          throw new Error('Storage adapter could not move the file');
+        }
+      } catch (error) {
+        const code = error?.code;
+        if (code === 'NoSuchKey' || code === 'NotFound') {
+          // A previous attempt may have moved the object before the database update failed.
+          if (!(await SojebStorage.isExists(permanentKey))) {
+            throw new BadRequestException(
+              'Uploaded file is missing. Finish the file transfer before finalizing.',
+            );
+          }
+        } else if (code === 'EntityTooLarge') {
+          throw new BadRequestException('File size must be at most 5 GB.');
+        } else {
+          this.logger.error(
+            `Storage move failed for media ${id} (${code ?? 'unknown'})`,
+          );
+          throw new ServiceUnavailableException(
+            'Could not move uploaded file. Retry finalization.',
+          );
+        }
+      }
+
+      const { count } = await this.prisma.video.updateMany({
+        where: { id, url: video.url, status: VideoStatus.UPLOADING },
+        data: { url: permanentKey, status: VideoStatus.DRAFT },
+      });
+
+      const updatedVideo = await this.prisma.video.findUnique({ where: { id } });
+      if (!updatedVideo || updatedVideo.url !== permanentKey) {
+        throw new ConflictException('Upload changed during finalization.');
+      }
+
+      if (count) {
+        await this.activityRepository.createActivity(
+          'Media Upload Completed',
+          `Media "${updatedVideo.title || 'Untitled'}" upload has been completed and is now in draft.`,
         );
       }
 
-      const updatedVideo = await this.prisma.video.update({
-        where: { id },
-        data: {
-          url: permanentKey,
-          status: VideoStatus.DRAFT,
-        },
-      });
-
-      await this.activityRepository.createActivity(
-        'Media Upload Completed',
-        `Media "${updatedVideo.title || 'Untitled'}" upload has been completed and is now in draft.`,
-      );
-
-      const rawThumb =
-        updatedVideo.thumbnail_url ||
-        (updatedVideo.media_type === MediaType.IMAGE ? updatedVideo.url : null);
-
-      return {
-        success: true,
-        message: 'Media upload completed successfully',
-        data: {
-          ...updatedVideo,
-          url: updatedVideo.url ? SojebStorage.url(updatedVideo.url) : null,
-          thumbnail_url: rawThumb ? SojebStorage.url(rawThumb) : null,
-        },
-      };
+      return this.completedUploadResponse(updatedVideo);
     }
 
+    return this.completedUploadResponse(video);
+  }
+
+  private completedUploadResponse(video: Prisma.VideoGetPayload<object>) {
     const rawThumb =
       video.thumbnail_url ||
       (video.media_type === MediaType.IMAGE ? video.url : null);
@@ -918,6 +937,7 @@ export class LibraryService {
       jpeg: 'image/jpeg',
       png: 'image/png',
       webp: 'image/webp',
+      gif: 'image/gif',
       pdf: 'application/pdf',
     };
     return mimeTypes[extension] || 'application/octet-stream';

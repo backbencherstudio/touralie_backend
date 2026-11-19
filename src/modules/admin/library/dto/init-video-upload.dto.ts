@@ -2,14 +2,19 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   ValidateIf,
 } from 'class-validator';
 import { type } from 'os';
 import { VideoType, Visibility, MediaType } from 'prisma/generated/enums';
+
+export const MAX_LIBRARY_UPLOAD_BYTES = 5_000_000_000;
 
 export class InitVideoUploadDto {
   @ApiProperty({
@@ -19,6 +24,18 @@ export class InitVideoUploadDto {
   @IsString()
   @IsNotEmpty()
   filename: string;
+
+  @ApiProperty({
+    description: 'File size in bytes',
+    required: false,
+    maximum: MAX_LIBRARY_UPLOAD_BYTES,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(MAX_LIBRARY_UPLOAD_BYTES, { message: 'File size must be at most 5 GB' })
+  size_bytes?: number;
 
   @ApiProperty({
     description: 'Video duration in seconds',
